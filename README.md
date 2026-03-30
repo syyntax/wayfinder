@@ -29,6 +29,54 @@ open http://localhost:8008
 
 The first user to register becomes the Super Admin.
 
+## Production Deployment
+
+To deploy Wayfinder to your own domain:
+
+1. **Configure environment variables** in `docker-compose.yml`:
+   ```yaml
+   environment:
+     - FRONTEND_URL=https://your-domain.com
+     - ALLOWED_ORIGINS=https://your-domain.com
+     - JWT_SECRET=your-secure-random-secret
+   ```
+
+   Or use shell environment variables:
+   ```bash
+   export FRONTEND_URL=https://your-domain.com
+   export ALLOWED_ORIGINS=https://your-domain.com
+   export JWT_SECRET=$(openssl rand -hex 64)
+   ```
+
+2. **Build and run**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Configure reverse proxy** (nginx, Caddy, Traefik):
+   - Point your domain to port 8008
+   - Enable HTTPS with Let's Encrypt
+   - Set appropriate proxy headers
+
+4. **Verify deployment**:
+   ```bash
+   # Check logs for CORS configuration
+   docker-compose logs -f
+
+   # Test health endpoint
+   curl https://your-domain.com/api/health
+   ```
+
+### Environment Variables for Custom Domains
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FRONTEND_URL` | Public URL for outbound links (emails, etc.) | `http://localhost:8008` |
+| `ALLOWED_ORIGINS` | Allowed CORS origins (comma-separated). If empty, allows all HTTP/HTTPS origins. | (empty = permissive) |
+| `JWT_SECRET` | Secret for JWT signing. Generate with `openssl rand -hex 64`. | Auto-generated |
+
+See [CLAUDE.md](CLAUDE.md) for detailed configuration options and nginx example.
+
 ## Development Setup
 
 ### Prerequisites

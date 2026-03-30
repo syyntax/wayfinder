@@ -32,6 +32,7 @@ dotenv.config({ path: join(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Initialize database
 initializeDatabase();
@@ -42,24 +43,62 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:8008', 'http://localhost:5173', 'http://localhost:3000'];
+// CORS configuration - flexible for any deployment URL
+const configuredOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(o => o.length > 0)
+    : [];
 
-app.use(cors({
+// Log CORS configuration at startup
+console.log('=== CORS Configuration ===');
+console.log('NODE_ENV:', NODE_ENV);
+console.log('ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS || '(not set)');
+console.log('FRONTEND_URL:', FRONTEND_URL);
+if (NODE_ENV === 'development') {
+    console.log('Development mode: All origins allowed');
+} else if (configuredOrigins.length > 0) {
+    console.log('Production mode: Restricted to configured origins:', configuredOrigins);
+} else {
+    console.log('Production mode: Using permissive CORS (allowing all HTTP/HTTPS origins)');
+    console.log('For stricter security, set ALLOWED_ORIGINS env var');
+}
+console.log('=========================');
+
+const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (same-origin, mobile apps, Postman, server-to-server, etc.)
+        if (!origin) {
             return callback(null, true);
         }
+
+        // Development mode: Allow all origins
+        if (NODE_ENV === 'development') {
+            return callback(null, true);
+        }
+
+        // If specific origins are configured, use strict checking
+        if (configuredOrigins.length > 0) {
+            if (configuredOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            console.log(`CORS rejected origin: ${origin} (not in ALLOWED_ORIGINS)`);
+            return callback(new Error('Not allowed by CORS'));
+        }
+
+        // Production without ALLOWED_ORIGINS: Allow any HTTP/HTTPS origin
+        // This enables self-hosted instances to work out of the box
+        if (origin.startsWith('https://') || origin.startsWith('http://')) {
+            return callback(null, true);
+        }
+
+        console.log(`CORS rejected origin: ${origin} (invalid protocol)`);
         callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({

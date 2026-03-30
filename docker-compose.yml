@@ -14,16 +14,36 @@ services:
       - PORT=8008
       - DATABASE_PATH=/app/data/wayfinder.db
       - UPLOAD_DIR=/app/data/uploads
-      - FRONTEND_URL=http://localhost:8008
-      # JWT_SECRET will be auto-generated if not provided
+      #
+      # FRONTEND_URL: The public URL where the app is accessed
+      # Used for password reset emails, approval links, and other outbound URLs
+      # Set this to your deployment URL (e.g., https://wayfinder.cyberhacktics.org)
+      # Leave as default for local development
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8008}
+      #
+      # JWT_SECRET: Secret key for signing JWT tokens
+      # Will be auto-generated if not provided (not recommended for production)
+      # Generate with: openssl rand -hex 64
       # Uncomment and set for production:
       # - JWT_SECRET=your-super-secure-jwt-secret-here
       - JWT_EXPIRES_IN=7d
-      - ALLOWED_ORIGINS=http://localhost:8008
+      #
+      # ALLOWED_ORIGINS: Comma-separated list of allowed CORS origins
+      # - If set: Only these specific origins are allowed (strict mode)
+      # - If empty/unset: All HTTP/HTTPS origins are allowed (permissive mode)
+      # Examples:
+      #   Strict (recommended for production):
+      #     ALLOWED_ORIGINS=https://wayfinder.cyberhacktics.org
+      #   Multiple origins:
+      #     ALLOWED_ORIGINS=https://wayfinder.cyberhacktics.org,https://app.example.com
+      #   Permissive (allows any origin - use with caution):
+      #     Leave empty or unset
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      #
       - RATE_LIMIT_WINDOW_MS=900000
       - RATE_LIMIT_MAX_REQUESTS=100
     volumes:
-      # Persist database
+      # Persist database and uploads
       - wayfinder_data:/app/data
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8008/api/health"]
