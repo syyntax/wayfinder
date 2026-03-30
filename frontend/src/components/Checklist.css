@@ -1,0 +1,263 @@
+.checklist {
+  background: var(--color-shadow);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.checklist-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.checklist-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-cyber-purple);
+  flex-shrink: 0;
+}
+
+.checklist-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.checklist-title {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: text;
+  padding: var(--space-xs) 0;
+}
+
+.checklist-title:hover {
+  color: var(--color-neon-cyan);
+}
+
+.checklist-title-input {
+  flex: 1;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-cyber-purple);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.checklist-title-input:focus {
+  outline: none;
+}
+
+.checklist-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.checklist:hover .checklist-delete {
+  opacity: 1;
+}
+
+.checklist-delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--color-blood-red);
+}
+
+.checklist-delete svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Progress Bar */
+.checklist-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  min-width: 32px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-obsidian);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-cyber-purple);
+  border-radius: 3px;
+  transition: width var(--transition-normal);
+}
+
+.progress-fill.complete {
+  background: var(--color-toxic-green);
+}
+
+/* Checklist Items */
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.checklist-item:hover {
+  background: var(--color-obsidian);
+}
+
+.item-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  background: transparent;
+  border: 2px solid var(--color-steel);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.item-checkbox:hover {
+  border-color: var(--color-cyber-purple);
+}
+
+.checklist-item.completed .item-checkbox {
+  background: var(--color-toxic-green);
+  border-color: var(--color-toxic-green);
+}
+
+.item-checkbox svg {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+.item-content {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.checklist-item.completed .item-content {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.item-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.checklist-item:hover .item-delete {
+  opacity: 1;
+}
+
+.item-delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--color-blood-red);
+}
+
+.item-delete svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Add Item */
+.add-item-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-item-button:hover {
+  background: var(--color-obsidian);
+  color: var(--color-text-primary);
+}
+
+.add-item-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.add-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.add-item-form input {
+  width: 100%;
+  padding: var(--space-sm);
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.add-item-form input:focus {
+  border-color: var(--color-cyber-purple);
+  outline: none;
+}
+
+.add-item-actions {
+  display: flex;
+  gap: var(--space-sm);
+}

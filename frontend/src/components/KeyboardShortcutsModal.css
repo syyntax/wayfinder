@@ -1,0 +1,138 @@
+/* Keyboard Shortcuts Modal */
+.keyboard-shortcuts-modal {
+  width: 100%;
+  max-width: 550px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.keyboard-shortcuts-modal .modal-header {
+  border-bottom: 1px solid var(--color-steel);
+  padding-bottom: var(--space-md);
+}
+
+.keyboard-shortcuts-modal .modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.keyboard-shortcuts-modal .header-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-cyber-purple);
+}
+
+/* Content */
+.shortcuts-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.shortcuts-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.shortcuts-section .section-title {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-cyber-purple-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, 'Share Tech Mono', monospace);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 0 var(--color-shadow);
+}
+
+.key-separator {
+  color: var(--color-text-muted);
+  margin: 0 2px;
+}
+
+.shortcut-description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+/* Footer */
+.shortcuts-footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-steel);
+  text-align: center;
+}
+
+.shortcuts-footer p {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+.shortcuts-footer kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px var(--space-xs);
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-steel);
+  border-radius: 3px;
+  font-family: var(--font-mono, 'Share Tech Mono', monospace);
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .keyboard-shortcuts-modal {
+    max-height: 90vh;
+  }
+
+  .shortcuts-content {
+    padding: var(--space-md);
+  }
+
+  .shortcut-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+}

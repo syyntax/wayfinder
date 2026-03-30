@@ -1,0 +1,258 @@
+/* ============================================
+   Board Import Preview Component
+   Dark Fantasy Cyberpunk Aesthetic
+   ============================================ */
+
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Header */
+.import-preview-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.import-preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, rgba(139, 61, 175, 0.2), rgba(139, 61, 175, 0.1));
+  border: 1px solid var(--color-cyber-purple);
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.import-preview-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--color-cyber-purple-bright);
+}
+
+.import-preview-title {
+  flex: 1;
+}
+
+.import-preview-title h3 {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.import-preview-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* Board Info */
+.import-preview-board-info {
+  padding: var(--space-md);
+  background: var(--color-shadow);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-md);
+}
+
+.board-info-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.board-info-description {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-md);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.board-info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.meta-item svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+/* Stats Grid */
+.import-preview-stats h4 {
+  margin: 0 0 var(--space-md) 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-md);
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-md);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.stat-item:hover {
+  border-color: var(--color-cyber-purple);
+  background: rgba(139, 61, 175, 0.05);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-cyber-purple-bright);
+  font-family: var(--font-display);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: var(--space-xs);
+}
+
+/* Warnings */
+.import-preview-warnings {
+  padding: var(--space-md);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+}
+
+.warnings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  color: #f59e0b;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.warnings-header svg {
+  width: 18px;
+  height: 18px;
+}
+
+.warnings-list {
+  margin: 0;
+  padding-left: var(--space-lg);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.warnings-list li {
+  margin-bottom: var(--space-xs);
+}
+
+.warnings-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Info Banner */
+.import-preview-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.import-preview-info svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-neon-cyan);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Actions */
+.import-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-steel);
+}
+
+.import-preview-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.import-preview-actions .btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .import-preview-actions {
+    flex-direction: column;
+  }
+
+  .import-preview-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

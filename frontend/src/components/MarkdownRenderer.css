@@ -1,0 +1,557 @@
+/* ============================================
+   Markdown Renderer - Dark Fantasy Cyberpunk Theme
+   ============================================ */
+
+.markdown-content {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Headers */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  color: var(--color-text-primary);
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child,
+.markdown-content h4:first-child,
+.markdown-content h5:first-child,
+.markdown-content h6:first-child {
+  margin-top: 0;
+}
+
+.markdown-content h1 {
+  font-size: 1.75rem;
+  color: var(--color-cyber-purple-bright);
+  border-bottom: 2px solid var(--color-steel);
+  padding-bottom: 0.5rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.4rem;
+  color: var(--color-neon-cyan);
+  border-bottom: 1px solid var(--color-steel);
+  padding-bottom: 0.4rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.2rem;
+  color: var(--color-text-primary);
+}
+
+.markdown-content h4 {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+}
+
+.markdown-content h5 {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.markdown-content h6 {
+  font-size: 0.9rem;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Paragraphs */
+.markdown-content p {
+  margin-bottom: 1em;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Bold and Italic */
+.markdown-content strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+/* Links - Neon Glow Effect */
+.markdown-content a {
+  color: var(--color-neon-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.markdown-content a:hover {
+  color: var(--color-neon-cyan-bright);
+  border-bottom-color: var(--color-neon-cyan);
+  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
+
+.markdown-content a:visited {
+  color: var(--color-cyber-purple-bright);
+}
+
+.markdown-content a:visited:hover {
+  color: var(--color-cyber-purple-bright);
+  border-bottom-color: var(--color-cyber-purple);
+  text-shadow: 0 0 8px rgba(139, 61, 175, 0.5);
+}
+
+/* Inline Code (single backticks) */
+.markdown-content code.inline-code {
+  background: var(--color-obsidian);
+  color: var(--color-neon-magenta);
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  border: 1px solid var(--color-steel);
+  white-space: nowrap;
+}
+
+/* Code Blocks Container (triple backticks) */
+.markdown-content .code-block-wrapper {
+  position: relative;
+  margin: 1em 0;
+  background: var(--color-shadow);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Language Label for Code Blocks */
+.markdown-content .code-language {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-obsidian);
+  border-bottom-left-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  z-index: 1;
+}
+
+/* Pre element inside code block wrapper */
+.markdown-content .code-block-wrapper pre {
+  margin: 0;
+  padding: var(--space-md);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow-x: auto;
+}
+
+/* Code inside code block (via pre) - override any inline-code styles */
+.markdown-content .code-block-wrapper pre code,
+.markdown-content .code-block-wrapper pre code.inline-code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Fallback pre styles (for any pre not in code-block-wrapper) */
+.markdown-content pre:not(.code-block-wrapper pre) {
+  margin: 1em 0;
+  background: var(--color-shadow);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  overflow-x: auto;
+}
+
+.markdown-content pre:not(.code-block-wrapper pre) code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+/* Blockquotes - Cyberpunk Styled */
+.markdown-content blockquote {
+  margin: 1em 0;
+  padding: var(--space-sm) var(--space-md);
+  border-left: 4px solid var(--color-cyber-purple);
+  background: linear-gradient(
+    90deg,
+    rgba(139, 61, 175, 0.1) 0%,
+    transparent 100%
+  );
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.markdown-content blockquote p {
+  margin-bottom: 0.5em;
+}
+
+.markdown-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content blockquote blockquote {
+  margin-top: 0.75em;
+  border-left-color: var(--color-neon-cyan);
+  background: linear-gradient(
+    90deg,
+    rgba(6, 182, 212, 0.1) 0%,
+    transparent 100%
+  );
+}
+
+/* Unordered Lists */
+.markdown-content ul {
+  margin: 1em 0;
+  padding-left: 1.5em;
+  list-style: none;
+}
+
+.markdown-content ul li {
+  position: relative;
+  margin-bottom: 0.5em;
+  padding-left: 0.5em;
+}
+
+.markdown-content ul li::before {
+  content: '';
+  position: absolute;
+  left: -1em;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  background: var(--color-cyber-purple);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+.markdown-content ul ul li::before {
+  background: var(--color-neon-cyan);
+  border-radius: 50%;
+  transform: none;
+}
+
+.markdown-content ul ul ul li::before {
+  background: transparent;
+  border: 1px solid var(--color-text-tertiary);
+  width: 5px;
+  height: 5px;
+}
+
+/* Ordered Lists */
+.markdown-content ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+  list-style: none;
+  counter-reset: list-counter;
+}
+
+.markdown-content ol li {
+  position: relative;
+  margin-bottom: 0.5em;
+  padding-left: 0.5em;
+  counter-increment: list-counter;
+}
+
+.markdown-content ol li::before {
+  content: counter(list-counter);
+  position: absolute;
+  left: -1.5em;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--color-cyber-purple-bright);
+}
+
+/* Task Lists */
+.markdown-content ul.contains-task-list {
+  padding-left: 0;
+}
+
+.markdown-content ul.contains-task-list li {
+  padding-left: 0;
+  list-style: none;
+}
+
+.markdown-content ul.contains-task-list li::before {
+  display: none;
+}
+
+.markdown-content .task-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: var(--space-sm);
+  vertical-align: middle;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-steel);
+  background: var(--color-obsidian);
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
+}
+
+.markdown-content .task-checkbox svg {
+  width: 14px;
+  height: 14px;
+}
+
+.markdown-content .task-checkbox.checked {
+  background: var(--color-toxic-green-dim);
+  border-color: var(--color-toxic-green);
+  color: white;
+}
+
+/* Tables */
+.markdown-content .table-wrapper {
+  margin: 1em 0;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-steel);
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.markdown-content thead {
+  background: var(--color-obsidian);
+}
+
+.markdown-content th {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--color-cyber-purple-bright);
+  border-bottom: 2px solid var(--color-cyber-purple-dim);
+  white-space: nowrap;
+}
+
+.markdown-content td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-steel);
+  color: var(--color-text-secondary);
+}
+
+.markdown-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-content tbody tr:hover {
+  background: rgba(139, 61, 175, 0.05);
+}
+
+.markdown-content tbody tr:nth-child(even) {
+  background: rgba(20, 20, 26, 0.5);
+}
+
+.markdown-content tbody tr:nth-child(even):hover {
+  background: rgba(139, 61, 175, 0.08);
+}
+
+/* Horizontal Rules */
+.markdown-content hr {
+  margin: 2em 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-steel) 20%,
+    var(--color-cyber-purple) 50%,
+    var(--color-steel) 80%,
+    transparent 100%
+  );
+}
+
+/* Images */
+.markdown-content .markdown-image-wrapper {
+  display: block;
+  margin: 1em 0;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-steel);
+}
+
+.markdown-content .image-error {
+  display: none;
+  padding: var(--space-md);
+  background: var(--color-shadow);
+  border: 1px dashed var(--color-steel);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.markdown-content .image-error.visible {
+  display: block;
+}
+
+/* Strikethrough */
+.markdown-content del {
+  color: var(--color-text-tertiary);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-blood-red-dim);
+}
+
+/* Subscript and Superscript */
+.markdown-content sub,
+.markdown-content sup {
+  font-size: 0.75em;
+}
+
+.markdown-content sup {
+  color: var(--color-neon-cyan);
+}
+
+.markdown-content sub {
+  color: var(--color-text-tertiary);
+}
+
+/* Definition Lists (if supported) */
+.markdown-content dl {
+  margin: 1em 0;
+}
+
+.markdown-content dt {
+  font-weight: 600;
+  color: var(--color-cyber-purple-bright);
+  margin-top: 1em;
+}
+
+.markdown-content dd {
+  margin-left: 1.5em;
+  color: var(--color-text-secondary);
+}
+
+/* Footnotes */
+.markdown-content .footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--color-steel);
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+}
+
+.markdown-content .footnotes ol {
+  padding-left: 1.5em;
+}
+
+.markdown-content .footnote-ref {
+  color: var(--color-neon-cyan);
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* Abbreviations */
+.markdown-content abbr {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* Mark/Highlight */
+.markdown-content mark {
+  background: rgba(249, 115, 22, 0.3);
+  color: var(--color-text-primary);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+/* Keyboard Keys */
+.markdown-content kbd {
+  display: inline-block;
+  padding: 0.15em 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-obsidian);
+  border: 1px solid var(--color-steel);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+}
+
+/* Empty State */
+.markdown-content:empty::before {
+  content: 'No content';
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .markdown-content {
+    font-size: 0.9rem;
+  }
+
+  .markdown-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .markdown-content h2 {
+    font-size: 1.25rem;
+  }
+
+  .markdown-content h3 {
+    font-size: 1.1rem;
+  }
+
+  .markdown-content .code-block-wrapper pre code {
+    font-size: 0.8rem;
+  }
+
+  .markdown-content code.inline-code {
+    font-size: 0.85em;
+  }
+
+  .markdown-content table {
+    font-size: 0.8rem;
+  }
+
+  .markdown-content th,
+  .markdown-content td {
+    padding: var(--space-xs) var(--space-sm);
+  }
+}

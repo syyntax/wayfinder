@@ -1,0 +1,264 @@
+/* ============================================
+   CreateWorkspaceModal Styles
+   Dark Fantasy Cyberpunk Theme
+   ============================================ */
+
+/* Modal Container Override for Workspace */
+.create-workspace-modal {
+  max-width: 520px;
+}
+
+/* Form Label Enhancements */
+.create-workspace-modal .form-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.required-indicator {
+  color: var(--color-blood-red);
+  font-size: 0.9em;
+}
+
+.optional-indicator {
+  color: var(--color-text-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: var(--space-xs);
+}
+
+/* Input Error State */
+.form-input.has-error {
+  border-color: var(--color-blood-red);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.form-input.has-error:focus {
+  border-color: var(--color-blood-red);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+/* Input Footer (hint/error + character count) */
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-top: var(--space-xs);
+  min-height: 20px;
+}
+
+.input-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  flex: 1;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.8rem;
+  color: var(--color-blood-red-bright);
+  flex: 1;
+  animation: slideUp var(--transition-fast) ease;
+}
+
+.error-message svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.character-count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  padding-left: var(--space-sm);
+}
+
+/* Character count warning states */
+.character-count.warning {
+  color: var(--color-ember-orange);
+}
+
+.character-count.danger {
+  color: var(--color-blood-red);
+}
+
+/* Workspace Preview Section */
+.workspace-preview {
+  background: var(--color-shadow);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.preview-label {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-sm);
+}
+
+.preview-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(139, 61, 175, 0.2), rgba(107, 45, 143, 0.1));
+  border: 1px solid rgba(139, 61, 175, 0.3);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.preview-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--color-cyber-purple-bright);
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  flex: 1;
+}
+
+.preview-name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-description {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+/* Create Button Enhancement */
+.btn-create {
+  min-width: 160px;
+}
+
+.btn-create svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Small Spinner for Button */
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Hover Effects */
+.create-workspace-modal:hover .preview-card {
+  border-color: var(--glass-border-hover);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  .create-workspace-modal {
+    margin: 0;
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .input-footer {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .character-count {
+    padding-left: 0;
+    align-self: flex-end;
+  }
+
+  .preview-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .preview-content {
+    align-items: center;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Animation for modal entrance */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.create-workspace-modal {
+  animation: modalSlideIn var(--transition-normal) ease forwards;
+}
+
+/* Focus visible enhancement for accessibility */
+.create-workspace-modal .form-input:focus-visible {
+  outline: 2px solid var(--color-cyber-purple);
+  outline-offset: 2px;
+}
+
+.create-workspace-modal .btn:focus-visible {
+  outline: 2px solid var(--color-cyber-purple);
+  outline-offset: 2px;
+}
+
+/* Placeholder styling */
+.create-workspace-modal .form-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* Textarea specific */
+.create-workspace-modal .form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  max-height: 200px;
+}

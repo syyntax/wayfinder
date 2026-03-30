@@ -1,0 +1,346 @@
+/* File Upload Zone Styles - Dark Fantasy Cyberpunk */
+
+.file-upload-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: var(--space-lg);
+  background: linear-gradient(135deg, var(--color-shadow) 0%, var(--color-obsidian) 100%);
+  border: 2px dashed var(--color-steel);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  overflow: hidden;
+}
+
+.file-upload-zone:hover {
+  border-color: var(--color-cyber-purple);
+  background: linear-gradient(
+    135deg,
+    rgba(139, 61, 175, 0.05) 0%,
+    var(--color-obsidian) 100%
+  );
+}
+
+.file-upload-zone.compact {
+  min-height: 100px;
+  padding: var(--space-md);
+}
+
+.file-upload-zone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.file-upload-zone.dragging {
+  border-color: var(--color-neon-cyan);
+  border-style: solid;
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.1) 0%,
+    rgba(139, 61, 175, 0.1) 100%
+  );
+}
+
+/* Hidden file input */
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Upload content */
+.file-upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+  pointer-events: none;
+}
+
+.file-upload-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.file-upload-zone:hover .file-upload-icon {
+  color: var(--color-cyber-purple);
+}
+
+.file-upload-zone.dragging .file-upload-icon {
+  color: var(--color-neon-cyan);
+}
+
+.file-upload-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.file-upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-upload-primary {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.file-upload-zone:hover .file-upload-primary {
+  color: var(--color-text-primary);
+}
+
+.file-upload-secondary {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.file-upload-link {
+  color: var(--color-cyber-purple-bright);
+  font-weight: 500;
+}
+
+.file-upload-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+/* Compact mode adjustments */
+.file-upload-zone.compact .file-upload-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.file-upload-zone.compact .file-upload-primary {
+  font-size: 0.85rem;
+}
+
+.file-upload-zone.compact .file-upload-secondary,
+.file-upload-zone.compact .file-upload-hint {
+  font-size: 0.75rem;
+}
+
+/* Drag overlay */
+.file-upload-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg);
+  z-index: 10;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.file-upload-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-neon-cyan);
+  animation: overlayPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes overlayPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.file-upload-overlay-content svg {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 0 8px var(--color-neon-cyan));
+}
+
+.file-upload-overlay-content span {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 16px var(--color-neon-cyan);
+}
+
+/* Preview */
+.file-upload-preview {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.file-upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.file-upload-preview-clear {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(4px);
+}
+
+.file-upload-preview-clear:hover {
+  background: rgba(220, 38, 38, 0.8);
+  border-color: var(--color-blood-red);
+  color: white;
+}
+
+.file-upload-preview-clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Full modal drag overlay - used when dragging over the entire modal */
+.drag-overlay-full {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  border-radius: var(--radius-lg);
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.drag-overlay-full-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+.drag-overlay-full-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--color-neon-cyan);
+  filter: drop-shadow(0 0 16px var(--color-neon-cyan));
+  animation: floatIcon 2s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.drag-overlay-full-text {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-neon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 24px var(--color-neon-cyan);
+}
+
+.drag-overlay-full-hint {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* Glow border animation for dragging */
+.drag-overlay-full::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px solid transparent;
+  border-radius: calc(var(--radius-lg) - 4px);
+  background: linear-gradient(90deg, var(--color-neon-cyan), var(--color-cyber-purple), var(--color-neon-cyan))
+    border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: borderGlow 2s linear infinite;
+}
+
+@keyframes borderGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .file-upload-zone {
+    min-height: 120px;
+    padding: var(--space-md);
+  }
+
+  .file-upload-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .file-upload-overlay-content svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .drag-overlay-full-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .drag-overlay-full-text {
+    font-size: 1.2rem;
+  }
+}

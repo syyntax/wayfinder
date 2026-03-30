@@ -1,0 +1,107 @@
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-abyss);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(139, 61, 175, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  animation: fadeIn 0.5s ease;
+}
+
+.loading-logo {
+  width: 120px;
+  height: 120px;
+}
+
+.logo-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 20px rgba(139, 61, 175, 0.5));
+}
+
+.outer-ring {
+  animation: rotate 8s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.inner-ring {
+  animation: rotate 6s linear infinite reverse;
+  transform-origin: 50% 50%;
+}
+
+.center-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--color-text-primary);
+  text-shadow: 0 0 30px rgba(139, 61, 175, 0.5);
+}
+
+.loading-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.1em;
+}
+
+.loading-bar {
+  width: 200px;
+  height: 3px;
+  background: var(--color-steel);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-progress {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, var(--color-cyber-purple), var(--color-neon-cyan), var(--color-neon-magenta));
+  border-radius: 2px;
+  animation: loadingSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(250%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
