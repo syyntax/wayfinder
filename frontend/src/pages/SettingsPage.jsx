@@ -34,13 +34,17 @@ function SettingsPage() {
 
   // Mail settings state (Super Admin only)
   const [mailSettings, setMailSettings] = useState({
+    mail_provider: 'smtp',
     smtp_host: '',
     smtp_port: 587,
     smtp_secure: true,
     smtp_username: '',
     smtp_password: '',
     from_email: '',
-    from_name: 'Wayfinder'
+    from_name: 'Wayfinder',
+    sendgrid_from_email: '',
+    sendgrid_from_name: 'Wayfinder',
+    sendgrid_api_key_configured: false
   });
   const [testEmail, setTestEmail] = useState('');
   const [isLoadingMailSettings, setIsLoadingMailSettings] = useState(false);
@@ -121,13 +125,17 @@ function SettingsPage() {
       const response = await mailApi.getSettings();
       if (response.data) {
         setMailSettings({
+          mail_provider: response.data.mail_provider || 'smtp',
           smtp_host: response.data.smtp_host || '',
           smtp_port: response.data.smtp_port || 587,
           smtp_secure: response.data.smtp_secure ?? true,
           smtp_username: response.data.smtp_username || '',
           smtp_password: response.data.smtp_password || '',
           from_email: response.data.from_email || '',
-          from_name: response.data.from_name || 'Wayfinder'
+          from_name: response.data.from_name || 'Wayfinder',
+          sendgrid_from_email: response.data.sendgrid_from_email || '',
+          sendgrid_from_name: response.data.sendgrid_from_name || 'Wayfinder',
+          sendgrid_api_key_configured: response.data.sendgrid_api_key_configured || false
         });
       }
     } catch (error) {
@@ -440,13 +448,25 @@ function SettingsPage() {
   };
 
   const handleSaveMailSettings = async () => {
-    if (!mailSettings.smtp_host) {
-      toast.error('SMTP host is required');
-      return;
-    }
-    if (!mailSettings.from_email) {
-      toast.error('From email address is required');
-      return;
+    // Validate based on provider
+    if (mailSettings.mail_provider === 'smtp') {
+      if (!mailSettings.smtp_host) {
+        toast.error('SMTP host is required');
+        return;
+      }
+      if (!mailSettings.from_email) {
+        toast.error('From email address is required');
+        return;
+      }
+    } else if (mailSettings.mail_provider === 'sendgrid') {
+      if (!mailSettings.sendgrid_api_key_configured) {
+        toast.error('SendGrid API key is not configured in the server environment');
+        return;
+      }
+      if (!mailSettings.sendgrid_from_email) {
+        toast.error('SendGrid from email address is required');
+        return;
+      }
     }
 
     setIsSavingMailSettings(true);
@@ -454,13 +474,17 @@ function SettingsPage() {
       const response = await mailApi.updateSettings(mailSettings);
       if (response.data) {
         setMailSettings({
+          mail_provider: response.data.mail_provider || 'smtp',
           smtp_host: response.data.smtp_host || '',
           smtp_port: response.data.smtp_port || 587,
           smtp_secure: response.data.smtp_secure ?? true,
           smtp_username: response.data.smtp_username || '',
           smtp_password: response.data.smtp_password || '',
           from_email: response.data.from_email || '',
-          from_name: response.data.from_name || 'Wayfinder'
+          from_name: response.data.from_name || 'Wayfinder',
+          sendgrid_from_email: response.data.sendgrid_from_email || '',
+          sendgrid_from_name: response.data.sendgrid_from_name || 'Wayfinder',
+          sendgrid_api_key_configured: response.data.sendgrid_api_key_configured || false
         });
       }
       toast.success('Mail settings saved successfully');
@@ -997,7 +1021,7 @@ function SettingsPage() {
                   <div>
                     <h2 className="panel-title">Mail Server Configuration</h2>
                     <p className="panel-description">
-                      Configure SMTP settings for sending email notifications.
+                      Configure email settings for sending notifications. Choose between SMTP or SendGrid Web API.
                     </p>
                   </div>
                   <span className="super-admin-badge">
@@ -1015,124 +1039,239 @@ function SettingsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="mail-settings-section">
-                      <h3 className="section-subtitle">
-                        <svg viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                        </svg>
-                        SMTP Server Settings
-                      </h3>
-
-                      <div className="mail-form-grid">
-                        <div className="form-group">
-                          <label>SMTP Host <span className="required">*</span></label>
-                          <input
-                            type="text"
-                            value={mailSettings.smtp_host}
-                            onChange={(e) => setMailSettings({ ...mailSettings, smtp_host: e.target.value })}
-                            placeholder="smtp.gmail.com"
-                          />
-                          <span className="form-hint">Your mail server hostname (e.g., smtp.gmail.com)</span>
-                        </div>
-
-                        <div className="form-group">
-                          <label>SMTP Port</label>
-                          <input
-                            type="number"
-                            value={mailSettings.smtp_port}
-                            onChange={(e) => setMailSettings({ ...mailSettings, smtp_port: parseInt(e.target.value) || 587 })}
-                            placeholder="587"
-                            min="1"
-                            max="65535"
-                          />
-                          <span className="form-hint">Common ports: 587 (TLS), 465 (SSL), 25 (insecure)</span>
-                        </div>
-
-                        <div className="form-group checkbox-group">
-                          <label className="checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={mailSettings.smtp_secure}
-                              onChange={(e) => setMailSettings({ ...mailSettings, smtp_secure: e.target.checked })}
-                            />
-                            <span className="checkbox-custom"></span>
-                            <span className="checkbox-text">
-                              Use Secure Connection (TLS/SSL)
-                              <span className="checkbox-hint">Enable for encrypted connections (recommended)</span>
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mail-settings-section">
-                      <h3 className="section-subtitle">
-                        <svg viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                        Authentication
-                      </h3>
-
-                      <div className="mail-form-grid">
-                        <div className="form-group">
-                          <label>SMTP Username</label>
-                          <input
-                            type="text"
-                            value={mailSettings.smtp_username}
-                            onChange={(e) => setMailSettings({ ...mailSettings, smtp_username: e.target.value })}
-                            placeholder="your-email@example.com"
-                            autoComplete="off"
-                          />
-                          <span className="form-hint">Usually your email address</span>
-                        </div>
-
-                        <div className="form-group">
-                          <label>SMTP Password</label>
-                          <input
-                            type="password"
-                            value={mailSettings.smtp_password}
-                            onChange={(e) => setMailSettings({ ...mailSettings, smtp_password: e.target.value })}
-                            placeholder={mailSettings.smtp_password === '********' ? 'Password is set' : 'Enter password'}
-                            autoComplete="new-password"
-                          />
-                          <span className="form-hint">For Gmail, use an App Password</span>
-                        </div>
-                      </div>
-                    </div>
-
+                    {/* Mail Provider Selection */}
                     <div className="mail-settings-section">
                       <h3 className="section-subtitle">
                         <svg viewBox="0 0 20 20" fill="currentColor">
                           <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                           <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                         </svg>
-                        Sender Information
+                        Mail Provider
                       </h3>
 
-                      <div className="mail-form-grid">
-                        <div className="form-group">
-                          <label>From Email Address <span className="required">*</span></label>
-                          <input
-                            type="email"
-                            value={mailSettings.from_email}
-                            onChange={(e) => setMailSettings({ ...mailSettings, from_email: e.target.value })}
-                            placeholder="noreply@example.com"
-                          />
-                          <span className="form-hint">Email address that will appear as the sender</span>
-                        </div>
+                      <div className="mail-provider-selector">
+                        <div className="provider-options">
+                          <label className={`provider-option ${mailSettings.mail_provider === 'smtp' ? 'selected' : ''}`}>
+                            <input
+                              type="radio"
+                              name="mail_provider"
+                              value="smtp"
+                              checked={mailSettings.mail_provider === 'smtp'}
+                              onChange={(e) => setMailSettings({ ...mailSettings, mail_provider: e.target.value })}
+                            />
+                            <div className="provider-content">
+                              <div className="provider-icon">
+                                <svg viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <div className="provider-info">
+                                <span className="provider-name">SMTP Server</span>
+                                <span className="provider-desc">Traditional email server connection</span>
+                              </div>
+                            </div>
+                          </label>
 
-                        <div className="form-group">
-                          <label>From Name</label>
-                          <input
-                            type="text"
-                            value={mailSettings.from_name}
-                            onChange={(e) => setMailSettings({ ...mailSettings, from_name: e.target.value })}
-                            placeholder="Wayfinder"
-                          />
-                          <span className="form-hint">Display name for the sender</span>
+                          <label className={`provider-option ${mailSettings.mail_provider === 'sendgrid' ? 'selected' : ''} ${!mailSettings.sendgrid_api_key_configured ? 'disabled' : ''}`}>
+                            <input
+                              type="radio"
+                              name="mail_provider"
+                              value="sendgrid"
+                              checked={mailSettings.mail_provider === 'sendgrid'}
+                              onChange={(e) => setMailSettings({ ...mailSettings, mail_provider: e.target.value })}
+                              disabled={!mailSettings.sendgrid_api_key_configured}
+                            />
+                            <div className="provider-content">
+                              <div className="provider-icon sendgrid">
+                                <svg viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <div className="provider-info">
+                                <span className="provider-name">SendGrid Web API</span>
+                                <span className="provider-desc">HTTP API (works on platforms blocking SMTP)</span>
+                                {!mailSettings.sendgrid_api_key_configured && (
+                                  <span className="provider-warning">API key not configured in server environment</span>
+                                )}
+                              </div>
+                            </div>
+                          </label>
                         </div>
                       </div>
                     </div>
+
+                    {/* SMTP Settings - shown when SMTP is selected */}
+                    {mailSettings.mail_provider === 'smtp' && (
+                      <>
+                        <div className="mail-settings-section">
+                          <h3 className="section-subtitle">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                            </svg>
+                            SMTP Server Settings
+                          </h3>
+
+                          <div className="mail-form-grid">
+                            <div className="form-group">
+                              <label>SMTP Host <span className="required">*</span></label>
+                              <input
+                                type="text"
+                                value={mailSettings.smtp_host}
+                                onChange={(e) => setMailSettings({ ...mailSettings, smtp_host: e.target.value })}
+                                placeholder="smtp.gmail.com"
+                              />
+                              <span className="form-hint">Your mail server hostname (e.g., smtp.gmail.com)</span>
+                            </div>
+
+                            <div className="form-group">
+                              <label>SMTP Port</label>
+                              <input
+                                type="number"
+                                value={mailSettings.smtp_port}
+                                onChange={(e) => setMailSettings({ ...mailSettings, smtp_port: parseInt(e.target.value) || 587 })}
+                                placeholder="587"
+                                min="1"
+                                max="65535"
+                              />
+                              <span className="form-hint">Common ports: 587 (TLS), 465 (SSL), 25 (insecure)</span>
+                            </div>
+
+                            <div className="form-group checkbox-group">
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={mailSettings.smtp_secure}
+                                  onChange={(e) => setMailSettings({ ...mailSettings, smtp_secure: e.target.checked })}
+                                />
+                                <span className="checkbox-custom"></span>
+                                <span className="checkbox-text">
+                                  Use Secure Connection (TLS/SSL)
+                                  <span className="checkbox-hint">Enable for encrypted connections (recommended)</span>
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mail-settings-section">
+                          <h3 className="section-subtitle">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                            Authentication
+                          </h3>
+
+                          <div className="mail-form-grid">
+                            <div className="form-group">
+                              <label>SMTP Username</label>
+                              <input
+                                type="text"
+                                value={mailSettings.smtp_username}
+                                onChange={(e) => setMailSettings({ ...mailSettings, smtp_username: e.target.value })}
+                                placeholder="your-email@example.com"
+                                autoComplete="off"
+                              />
+                              <span className="form-hint">Usually your email address</span>
+                            </div>
+
+                            <div className="form-group">
+                              <label>SMTP Password</label>
+                              <input
+                                type="password"
+                                value={mailSettings.smtp_password}
+                                onChange={(e) => setMailSettings({ ...mailSettings, smtp_password: e.target.value })}
+                                placeholder={mailSettings.smtp_password === '********' ? 'Password is set' : 'Enter password'}
+                                autoComplete="new-password"
+                              />
+                              <span className="form-hint">For Gmail, use an App Password</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mail-settings-section">
+                          <h3 className="section-subtitle">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                            </svg>
+                            Sender Information
+                          </h3>
+
+                          <div className="mail-form-grid">
+                            <div className="form-group">
+                              <label>From Email Address <span className="required">*</span></label>
+                              <input
+                                type="email"
+                                value={mailSettings.from_email}
+                                onChange={(e) => setMailSettings({ ...mailSettings, from_email: e.target.value })}
+                                placeholder="noreply@example.com"
+                              />
+                              <span className="form-hint">Email address that will appear as the sender</span>
+                            </div>
+
+                            <div className="form-group">
+                              <label>From Name</label>
+                              <input
+                                type="text"
+                                value={mailSettings.from_name}
+                                onChange={(e) => setMailSettings({ ...mailSettings, from_name: e.target.value })}
+                                placeholder="Wayfinder"
+                              />
+                              <span className="form-hint">Display name for the sender</span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* SendGrid Settings - shown when SendGrid is selected */}
+                    {mailSettings.mail_provider === 'sendgrid' && (
+                      <div className="mail-settings-section">
+                        <h3 className="section-subtitle">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                          </svg>
+                          SendGrid Configuration
+                        </h3>
+
+                        <div className="sendgrid-api-notice">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          <div>
+                            <strong>API Key Status:</strong> {mailSettings.sendgrid_api_key_configured ? (
+                              <span className="api-key-configured">Configured via SENDGRID_WEB_API_KEY environment variable</span>
+                            ) : (
+                              <span className="api-key-not-configured">Not configured - set SENDGRID_WEB_API_KEY in server environment</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mail-form-grid">
+                          <div className="form-group">
+                            <label>From Email Address <span className="required">*</span></label>
+                            <input
+                              type="email"
+                              value={mailSettings.sendgrid_from_email}
+                              onChange={(e) => setMailSettings({ ...mailSettings, sendgrid_from_email: e.target.value })}
+                              placeholder="wayfinder@yourdomain.com"
+                            />
+                            <span className="form-hint">Must be verified in your SendGrid account</span>
+                          </div>
+
+                          <div className="form-group">
+                            <label>From Name</label>
+                            <input
+                              type="text"
+                              value={mailSettings.sendgrid_from_name}
+                              onChange={(e) => setMailSettings({ ...mailSettings, sendgrid_from_name: e.target.value })}
+                              placeholder="Wayfinder"
+                            />
+                            <span className="form-hint">Display name for the sender</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mail-settings-actions">
                       <button

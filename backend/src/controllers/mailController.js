@@ -28,20 +28,43 @@ export async function getSettings(req, res) {
 export async function updateSettings(req, res) {
     try {
         const {
+            mail_provider,
             smtp_host,
             smtp_port,
             smtp_secure,
             smtp_username,
             smtp_password,
             from_email,
-            from_name
+            from_name,
+            sendgrid_from_email,
+            sendgrid_from_name
         } = req.body;
 
-        // Validate email format if provided
+        // Validate mail_provider if provided
+        if (mail_provider !== undefined && mail_provider !== null) {
+            if (!['smtp', 'sendgrid'].includes(mail_provider)) {
+                return res.status(400).json(apiResponse(false, null, 'Invalid mail provider. Must be "smtp" or "sendgrid"'));
+            }
+
+            // If switching to SendGrid, validate that API key is configured
+            if (mail_provider === 'sendgrid' && !process.env.SENDGRID_WEB_API_KEY) {
+                return res.status(400).json(apiResponse(false, null, 'Cannot enable SendGrid: SENDGRID_WEB_API_KEY environment variable is not set'));
+            }
+        }
+
+        // Validate SMTP email format if provided
         if (from_email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(from_email)) {
-                return res.status(400).json(apiResponse(false, null, 'Invalid from email address format'));
+                return res.status(400).json(apiResponse(false, null, 'Invalid SMTP from email address format'));
+            }
+        }
+
+        // Validate SendGrid email format if provided
+        if (sendgrid_from_email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(sendgrid_from_email)) {
+                return res.status(400).json(apiResponse(false, null, 'Invalid SendGrid from email address format'));
             }
         }
 
@@ -62,13 +85,16 @@ export async function updateSettings(req, res) {
         }
 
         const settings = updateMailSettings({
+            mail_provider,
             smtp_host,
             smtp_port,
             smtp_secure,
             smtp_username,
             smtp_password,
             from_email,
-            from_name
+            from_name,
+            sendgrid_from_email,
+            sendgrid_from_name
         });
 
         res.json(apiResponse(true, settings, 'Mail settings updated successfully'));
@@ -107,8 +133,11 @@ export async function testEmail(req, res) {
 
         // Provide more specific error messages
         let errorMessage = 'Failed to send test email';
+
         if (error.message.includes('not configured')) {
-            errorMessage = 'Mail server not configured. Please save settings first.';
+            errorMessage = error.message;
+        } else if (error.message.includes('SendGrid')) {
+            errorMessage = error.message;
         } else if (error.code === 'ECONNECTION' || error.code === 'ECONNREFUSED') {
             errorMessage = 'Could not connect to SMTP server. Please check host and port.';
         } else if (error.code === 'EAUTH' || error.message.includes('authentication')) {
@@ -124,20 +153,22 @@ export async function testEmail(req, res) {
 }
 
 /**
- * Verify SMTP connection
+ * Verify mail connection (SMTP or SendGrid)
  * POST /api/mail/verify
  */
 export async function verifySettings(req, res) {
     try {
         const result = await verifyConnection();
 
-        res.json(apiResponse(true, result, 'SMTP connection verified'));
+        res.json(apiResponse(true, result, result.message || 'Mail connection verified'));
     } catch (error) {
         console.error('Verify mail settings error:', error);
 
-        let errorMessage = 'SMTP connection verification failed';
+        let errorMessage = 'Mail connection verification failed';
         if (error.message.includes('not configured')) {
-            errorMessage = 'Mail server not configured. Please save settings first.';
+            errorMessage = error.message;
+        } else if (error.message.includes('SendGrid')) {
+            errorMessage = error.message;
         } else if (error.message) {
             errorMessage = error.message;
         }

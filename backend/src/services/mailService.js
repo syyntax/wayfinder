@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import { getDatabase } from '../db/database.js';
 
@@ -112,13 +113,17 @@ export function getMailSettingsForApi() {
     if (!settings) return null;
 
     return {
+        mail_provider: settings.mail_provider || 'smtp',
         smtp_host: settings.smtp_host,
         smtp_port: settings.smtp_port,
         smtp_secure: Boolean(settings.smtp_secure),
         smtp_username: settings.smtp_username,
         smtp_password: settings.smtp_password_encrypted ? '********' : null,
         from_email: settings.from_email,
-        from_name: settings.from_name
+        from_name: settings.from_name,
+        sendgrid_from_email: settings.sendgrid_from_email,
+        sendgrid_from_name: settings.sendgrid_from_name,
+        sendgrid_api_key_configured: Boolean(process.env.SENDGRID_WEB_API_KEY)
     };
 }
 
@@ -131,6 +136,11 @@ export function updateMailSettings(data) {
 
     const updates = [];
     const values = [];
+
+    if (data.mail_provider !== undefined) {
+        updates.push('mail_provider = ?');
+        values.push(data.mail_provider || 'smtp');
+    }
 
     if (data.smtp_host !== undefined) {
         updates.push('smtp_host = ?');
@@ -166,6 +176,16 @@ export function updateMailSettings(data) {
     if (data.from_name !== undefined) {
         updates.push('from_name = ?');
         values.push(data.from_name || 'Wayfinder');
+    }
+
+    if (data.sendgrid_from_email !== undefined) {
+        updates.push('sendgrid_from_email = ?');
+        values.push(data.sendgrid_from_email || null);
+    }
+
+    if (data.sendgrid_from_name !== undefined) {
+        updates.push('sendgrid_from_name = ?');
+        values.push(data.sendgrid_from_name || 'Wayfinder');
     }
 
     if (updates.length === 0) {
@@ -208,13 +228,100 @@ export function createTransporter() {
 }
 
 /**
- * Send an email using stored SMTP settings
+ * Check if SendGrid is properly configured
  */
-export async function sendEmail(to, subject, html, text = null) {
+export function isSendGridConfigured() {
+    return Boolean(process.env.SENDGRID_WEB_API_KEY);
+}
+
+/**
+ * Check if SMTP is properly configured
+ */
+export function isSmtpConfigured() {
+    const settings = getMailSettings();
+    return Boolean(settings && settings.smtp_host);
+}
+
+/**
+ * Check if any mail provider is configured
+ */
+export function isMailConfigured() {
+    const settings = getMailSettings();
+    if (!settings) return false;
+
+    const provider = settings.mail_provider || 'smtp';
+
+    if (provider === 'sendgrid') {
+        return isSendGridConfigured() && Boolean(settings.sendgrid_from_email);
+    } else {
+        return isSmtpConfigured();
+    }
+}
+
+/**
+ * Send an email using SendGrid Web API
+ */
+async function sendEmailViaSendGrid(to, subject, html, text = null) {
+    const apiKey = process.env.SENDGRID_WEB_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('SendGrid API key not configured. Set SENDGRID_WEB_API_KEY environment variable.');
+    }
+
+    const settings = getMailSettings();
+
+    if (!settings || !settings.sendgrid_from_email) {
+        throw new Error('SendGrid sender email not configured. Please configure it in Mail Settings.');
+    }
+
+    sgMail.setApiKey(apiKey);
+
+    const msg = {
+        to,
+        from: {
+            email: settings.sendgrid_from_email,
+            name: settings.sendgrid_from_name || 'Wayfinder'
+        },
+        subject,
+        text: text || html.replace(/<[^>]*>/g, ''),
+        html
+    };
+
+    try {
+        const response = await sgMail.send(msg);
+        return {
+            success: true,
+            messageId: response[0]?.headers?.['x-message-id'] || 'sendgrid-' + Date.now(),
+            response: 'Email sent via SendGrid'
+        };
+    } catch (error) {
+        console.error('SendGrid error:', error);
+
+        // Extract meaningful error message
+        let errorMessage = 'Failed to send email via SendGrid';
+        if (error.response?.body?.errors) {
+            errorMessage = error.response.body.errors.map(e => e.message).join(', ');
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        // Don't expose API key in error messages
+        if (errorMessage.includes(apiKey)) {
+            errorMessage = 'SendGrid API error. Please check your API key configuration.';
+        }
+
+        throw new Error(errorMessage);
+    }
+}
+
+/**
+ * Send an email using SMTP (nodemailer)
+ */
+async function sendEmailViaSMTP(to, subject, html, text = null) {
     const settings = getMailSettingsWithPassword();
 
     if (!settings || !settings.smtp_host) {
-        throw new Error('Mail server not configured');
+        throw new Error('SMTP server not configured');
     }
 
     const transporter = createTransporter();
@@ -237,19 +344,67 @@ export async function sendEmail(to, subject, html, text = null) {
             response: info.response
         };
     } catch (error) {
-        console.error('Failed to send email:', error);
+        console.error('Failed to send email via SMTP:', error);
         throw error;
     }
 }
 
 /**
- * Send a test email to verify SMTP configuration
+ * Send an email using the configured provider (SMTP or SendGrid)
+ */
+export async function sendEmail(to, subject, html, text = null) {
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
+
+    if (provider === 'sendgrid') {
+        return sendEmailViaSendGrid(to, subject, html, text);
+    } else {
+        return sendEmailViaSMTP(to, subject, html, text);
+    }
+}
+
+/**
+ * Test SendGrid connection by verifying the API key
+ */
+export async function testSendGridConnection() {
+    const apiKey = process.env.SENDGRID_WEB_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('SendGrid API key not configured. Set SENDGRID_WEB_API_KEY environment variable.');
+    }
+
+    const settings = getMailSettings();
+
+    if (!settings || !settings.sendgrid_from_email) {
+        throw new Error('SendGrid sender email not configured. Please save settings first.');
+    }
+
+    // SendGrid doesn't have a simple "verify" endpoint, so we'll do a basic check
+    // The real test happens when sending a test email
+    return {
+        success: true,
+        message: 'SendGrid API key is configured. Send a test email to verify it works.'
+    };
+}
+
+/**
+ * Send a test email to verify mail configuration
  */
 export async function sendTestEmail(testEmail) {
-    const settings = getMailSettingsWithPassword();
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
 
-    if (!settings || !settings.smtp_host) {
-        throw new Error('Mail server not configured. Please save settings first.');
+    if (provider === 'sendgrid') {
+        if (!process.env.SENDGRID_WEB_API_KEY) {
+            throw new Error('SendGrid API key not configured. Set SENDGRID_WEB_API_KEY environment variable.');
+        }
+        if (!settings.sendgrid_from_email) {
+            throw new Error('SendGrid sender email not configured. Please save settings first.');
+        }
+    } else {
+        if (!settings || !settings.smtp_host) {
+            throw new Error('Mail server not configured. Please save settings first.');
+        }
     }
 
     if (!testEmail) {
@@ -261,6 +416,10 @@ export async function sendTestEmail(testEmail) {
     if (!emailRegex.test(testEmail)) {
         throw new Error('Invalid email address format');
     }
+
+    const fromEmail = provider === 'sendgrid' ? settings.sendgrid_from_email : settings.from_email;
+    const fromName = provider === 'sendgrid' ? settings.sendgrid_from_name : settings.from_name;
+    const providerInfo = provider === 'sendgrid' ? 'SendGrid Web API' : `SMTP (${settings.smtp_host}:${settings.smtp_port})`;
 
     const subject = 'Wayfinder - Test Email';
     const html = `
@@ -299,10 +458,8 @@ export async function sendTestEmail(testEmail) {
                                     </p>
                                     <div style="padding: 20px; background-color: rgba(139, 61, 175, 0.1); border: 1px solid rgba(139, 61, 175, 0.3); border-radius: 8px;">
                                         <p style="margin: 0; font-size: 14px; color: #8b3daf;">
-                                            <strong>SMTP Host:</strong> ${settings.smtp_host}<br>
-                                            <strong>SMTP Port:</strong> ${settings.smtp_port}<br>
-                                            <strong>Secure Connection:</strong> ${settings.smtp_secure ? 'Yes (TLS)' : 'No'}<br>
-                                            <strong>From:</strong> ${settings.from_name} &lt;${settings.from_email}&gt;
+                                            <strong>Provider:</strong> ${providerInfo}<br>
+                                            <strong>From:</strong> ${fromName} &lt;${fromEmail}&gt;
                                         </p>
                                     </div>
                                 </td>
@@ -333,6 +490,13 @@ export async function sendTestEmail(testEmail) {
  * Verify SMTP connection without sending email
  */
 export async function verifyConnection() {
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
+
+    if (provider === 'sendgrid') {
+        return testSendGridConnection();
+    }
+
     const transporter = createTransporter();
 
     try {
@@ -344,16 +508,171 @@ export async function verifyConnection() {
 }
 
 /**
+ * Send a welcome email to a new user
+ * @param {string} email - Recipient email address
+ * @param {string} displayName - User's display name
+ */
+export async function sendWelcomeEmail(email, displayName = null) {
+    // Check if mail is configured before attempting to send
+    if (!isMailConfigured()) {
+        console.log('Mail not configured - skipping welcome email');
+        return null;
+    }
+
+    // Get frontend URL from environment or use default
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const loginLink = `${frontendUrl}/login`;
+
+    const subject = 'Welcome to Wayfinder - Your Command Deck Awaits';
+    const userName = displayName || 'Operator';
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Welcome to Wayfinder</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td align="center" style="padding: 40px 20px;">
+                        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse;">
+                            <!-- Header -->
+                            <tr>
+                                <td style="padding: 30px; background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); border: 1px solid #333; border-radius: 12px 12px 0 0; text-align: center;">
+                                    <div style="display: inline-block; padding: 15px; border: 2px solid #8b3daf; border-radius: 50%; margin-bottom: 15px;">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#8b3daf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M2 17L12 22L22 17" stroke="#8b3daf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M2 12L12 17L22 12" stroke="#8b3daf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #8b3daf; letter-spacing: 2px; text-transform: uppercase;">
+                                        WAYFINDER
+                                    </h1>
+                                    <p style="margin: 10px 0 0 0; color: #06b6d4; font-size: 14px; letter-spacing: 1px; font-weight: 600;">
+                                        Welcome Aboard
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Content -->
+                            <tr>
+                                <td style="padding: 40px 30px; background-color: #111; border-left: 1px solid #333; border-right: 1px solid #333;">
+                                    <h2 style="margin: 0 0 20px 0; font-size: 22px; color: #e0e0e0;">
+                                        Greetings, ${userName}!
+                                    </h2>
+                                    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #999;">
+                                        Your command deck has been initialized. Welcome to Wayfinder - where dark fantasy meets cyberpunk efficiency in project management.
+                                    </p>
+
+                                    <!-- Getting Started Section -->
+                                    <div style="padding: 20px; background-color: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; margin-bottom: 20px;">
+                                        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #06b6d4; text-transform: uppercase; letter-spacing: 1px;">
+                                            // Initialize Your Journey
+                                        </h3>
+                                        <ul style="margin: 0; padding: 0 0 0 20px; color: #999; font-size: 14px; line-height: 2;">
+                                            <li><span style="color: #8b3daf;">Create your first board</span> - Organize your projects in the command center</li>
+                                            <li><span style="color: #8b3daf;">Invite your crew</span> - Collaborate with team members in shared workspaces</li>
+                                            <li><span style="color: #8b3daf;">Explore the interface</span> - Discover cards, lists, labels, and more</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Login Button -->
+                                    <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="${loginLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #8b3daf 0%, #6b2d8f 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px; box-shadow: 0 4px 15px rgba(139, 61, 175, 0.4);">
+                                                    Access Command Deck
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <p style="margin: 20px 0 0 0; font-size: 14px; line-height: 1.6; color: #666;">
+                                        If the button doesn't work, copy and paste this link into your browser:
+                                    </p>
+                                    <p style="margin: 10px 0 0 0; font-size: 12px; line-height: 1.4; color: #06b6d4; word-break: break-all; background-color: #0d0d0d; padding: 12px; border-radius: 6px; border: 1px solid #222;">
+                                        ${loginLink}
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding: 25px 30px; background-color: #0d0d0d; border: 1px solid #333; border-top: none; border-radius: 0 0 12px 12px; text-align: center;">
+                                    <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">
+                                        This is an automated message from Wayfinder.
+                                        Please do not reply to this email.
+                                    </p>
+                                    <p style="margin: 0; font-size: 11px; color: #444;">
+                                        Sent at: ${new Date().toISOString()}
+                                    </p>
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #222;">
+                                        <p style="margin: 0; font-size: 11px; color: #555;">
+                                            Dark Fantasy Cyberpunk Kanban
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+    `;
+
+    const text = `
+WAYFINDER - Welcome Aboard
+
+Greetings, ${userName}!
+
+Your command deck has been initialized. Welcome to Wayfinder - where dark fantasy meets cyberpunk efficiency in project management.
+
+// INITIALIZE YOUR JOURNEY
+
+- Create your first board - Organize your projects in the command center
+- Invite your crew - Collaborate with team members in shared workspaces
+- Explore the interface - Discover cards, lists, labels, and more
+
+Login here: ${loginLink}
+
+---
+This is an automated message from Wayfinder.
+Sent at: ${new Date().toISOString()}
+    `.trim();
+
+    try {
+        return await sendEmail(email, subject, html, text);
+    } catch (error) {
+        console.error('Failed to send welcome email:', error);
+        // Don't throw - welcome emails shouldn't block registration
+        return null;
+    }
+}
+
+/**
  * Send a password reset email with a secure reset link
  * @param {string} email - Recipient email address
  * @param {string} resetToken - The secure reset token
  * @param {string} displayName - User's display name (optional)
  */
 export async function sendPasswordResetEmail(email, resetToken, displayName = null) {
-    const settings = getMailSettingsWithPassword();
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
 
-    if (!settings || !settings.smtp_host) {
-        throw new Error('Mail server not configured');
+    if (provider === 'sendgrid') {
+        if (!process.env.SENDGRID_WEB_API_KEY) {
+            throw new Error('SendGrid API key not configured');
+        }
+        if (!settings.sendgrid_from_email) {
+            throw new Error('SendGrid sender email not configured');
+        }
+    } else {
+        if (!settings || !settings.smtp_host) {
+            throw new Error('Mail server not configured');
+        }
     }
 
     // Get frontend URL from environment or use default
@@ -492,10 +811,20 @@ Sent at: ${new Date().toISOString()}
  * @param {string} displayName - User's display name
  */
 export async function sendApprovalEmail(email, displayName = null) {
-    const settings = getMailSettingsWithPassword();
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
 
-    if (!settings || !settings.smtp_host) {
-        throw new Error('Mail server not configured');
+    if (provider === 'sendgrid') {
+        if (!process.env.SENDGRID_WEB_API_KEY) {
+            throw new Error('SendGrid API key not configured');
+        }
+        if (!settings.sendgrid_from_email) {
+            throw new Error('SendGrid sender email not configured');
+        }
+    } else {
+        if (!settings || !settings.smtp_host) {
+            throw new Error('Mail server not configured');
+        }
     }
 
     // Get frontend URL from environment or use default
@@ -625,10 +954,20 @@ Sent at: ${new Date().toISOString()}
  * @param {string} displayName - User's display name
  */
 export async function sendRejectionEmail(email, displayName = null) {
-    const settings = getMailSettingsWithPassword();
+    const settings = getMailSettings();
+    const provider = settings?.mail_provider || 'smtp';
 
-    if (!settings || !settings.smtp_host) {
-        throw new Error('Mail server not configured');
+    if (provider === 'sendgrid') {
+        if (!process.env.SENDGRID_WEB_API_KEY) {
+            throw new Error('SendGrid API key not configured');
+        }
+        if (!settings.sendgrid_from_email) {
+            throw new Error('SendGrid sender email not configured');
+        }
+    } else {
+        if (!settings || !settings.smtp_host) {
+            throw new Error('Mail server not configured');
+        }
     }
 
     const subject = 'Wayfinder - Registration Status Update';
@@ -738,5 +1077,10 @@ export default {
     sendPasswordResetEmail,
     sendApprovalEmail,
     sendRejectionEmail,
-    verifyConnection
+    sendWelcomeEmail,
+    verifyConnection,
+    testSendGridConnection,
+    isMailConfigured,
+    isSendGridConfigured,
+    isSmtpConfigured
 };

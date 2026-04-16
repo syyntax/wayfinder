@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { getDatabase } from '../db/database.js';
 import { generateToken } from '../middleware/auth.js';
 import { generateId, sanitizeUser, apiResponse } from '../utils/helpers.js';
+import { sendWelcomeEmail } from '../services/mailService.js';
 
 /**
  * Check if registration requires approval
@@ -78,6 +79,12 @@ export async function register(req, res) {
             `).run(workspaceId, userId, now);
 
             const token = generateToken(userId);
+
+            // Send welcome email (non-blocking - don't wait for result)
+            // The sendWelcomeEmail function handles errors internally and won't throw
+            sendWelcomeEmail(email, displayName || username).catch(err => {
+                console.error('Failed to send welcome email (non-blocking):', err);
+            });
 
             res.status(201).json(apiResponse(true, {
                 user: sanitizeUser(user),
