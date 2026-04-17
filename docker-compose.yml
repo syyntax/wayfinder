@@ -48,7 +48,7 @@ services:
       # Get your API key from: https://app.sendgrid.com/settings/api_keys
       # The from email must be verified in your SendGrid account
       # Uncomment and set your API key:
-      # - SENDGRID_WEB_API_KEY=SG.your-api-key-here
+      - SENDGRID_WEB_API_KEY=YOUR_API_KEY
     volumes:
       # Persist database and uploads
       - wayfinder_data:/app/data

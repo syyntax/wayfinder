@@ -1,5 +1,10 @@
 import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse, sanitizeUser } from '../utils/helpers.js';
+import {
+    createNotification,
+    getUserDisplayName,
+    getWorkspaceInfo
+} from '../services/notificationService.js';
 
 /**
  * Get user's workspaces
@@ -191,6 +196,21 @@ export function inviteToWorkspace(req, res) {
             VALUES (?, ?, ?, ?)
         `).run(id, invitee.id, memberRole, now);
 
+        // Create notification for the invited user
+        const workspace = getWorkspaceInfo(id);
+        const actorName = getUserDisplayName(req.user.id);
+
+        createNotification(
+            invitee.id,
+            'workspace_added',
+            `Added to workspace "${workspace.name}"`,
+            `${actorName} added you to the workspace`,
+            'workspace',
+            id,
+            workspace.name,
+            req.user.id
+        );
+
         res.json(apiResponse(true, {
             member: {
                 id: invitee.id,
@@ -243,7 +263,23 @@ export function removeMember(req, res) {
             return res.status(403).json(apiResponse(false, null, 'Admins cannot remove other admins'));
         }
 
+        // Get workspace info before removing member
+        const workspace = getWorkspaceInfo(id);
+        const actorName = getUserDisplayName(req.user.id);
+
         db.prepare('DELETE FROM workspace_members WHERE workspace_id = ? AND user_id = ?').run(id, userId);
+
+        // Create notification for the removed user
+        createNotification(
+            userId,
+            'workspace_removed',
+            `Removed from workspace "${workspace.name}"`,
+            `${actorName} removed you from the workspace`,
+            'workspace',
+            id,
+            workspace.name,
+            req.user.id
+        );
 
         res.json(apiResponse(true, null, 'Member removed'));
 

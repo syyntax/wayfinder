@@ -21,6 +21,7 @@ import userRoutes from './routes/users.js';
 import mailRoutes from './routes/mail.js';
 import userManagementRoutes from './routes/userManagement.js';
 import appSettingsRoutes from './routes/appSettings.js';
+import notificationRoutes from './routes/notifications.js';
 import { UPLOAD_DIRS } from './middleware/upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -194,6 +195,7 @@ app.use('/api/mail', mailRoutes);
 app.use('/api/admin', userManagementRoutes);
 app.use('/api/admin', appSettingsRoutes);
 app.use('/api/settings', appSettingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api', attachmentRoutes);
 
 // 404 handler for API routes

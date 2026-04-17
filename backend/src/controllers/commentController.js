@@ -1,5 +1,11 @@
 import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse } from '../utils/helpers.js';
+import {
+    createNotificationsForUsers,
+    getCardMembers,
+    getCardInfo,
+    getUserDisplayName
+} from '../services/notificationService.js';
 
 /**
  * Get comments for a card
@@ -91,6 +97,22 @@ export function createComment(req, res) {
             JOIN users u ON c.user_id = u.id
             WHERE c.id = ?
         `).get(commentId);
+
+        // Create notifications for card members (except the commenter)
+        const cardMembers = getCardMembers(cardId);
+        const actorName = getUserDisplayName(req.user.id);
+        const commentPreview = content.length > 50 ? content.substring(0, 50) + '...' : content;
+
+        createNotificationsForUsers(
+            cardMembers,
+            'comment_added',
+            `New comment on "${card.title}"`,
+            `${actorName} commented: "${commentPreview}"`,
+            'card',
+            cardId,
+            card.title,
+            req.user.id
+        );
 
         res.status(201).json(apiResponse(true, { comment }, 'Comment added'));
 

@@ -442,4 +442,29 @@ export const appSettingsApi = {
   getPublicSettings: () => request('/settings/public'),
 };
 
+// Notification API
+export const notificationApi = {
+  // Get notifications (paginated)
+  getNotifications: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.offset) queryParams.append('offset', params.offset);
+    if (params.unreadOnly) queryParams.append('unread_only', 'true');
+    const queryString = queryParams.toString();
+    return request(`/notifications${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get unread notification count
+  getUnreadCount: () => request('/notifications/unread-count'),
+
+  // Mark a single notification as read
+  markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+
+  // Mark all notifications as read
+  markAllAsRead: () => request('/notifications/mark-all-read', { method: 'PATCH' }),
+
+  // Delete a notification
+  deleteNotification: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
+};
+
 export { ApiError };

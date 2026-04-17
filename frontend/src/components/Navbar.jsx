@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import useNotificationStore from '../store/notificationStore';
+import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 function Navbar() {
   const { user, logout } = useAuthStore();
+  const { reset: resetNotifications } = useNotificationStore();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -20,6 +23,7 @@ function Navbar() {
   }, []);
 
   const handleLogout = () => {
+    resetNotifications();
     logout();
     navigate('/login');
   };
@@ -58,6 +62,7 @@ function Navbar() {
         </Link>
 
         <div className="navbar-actions">
+          <NotificationBell />
           <div className="user-menu" ref={dropdownRef}>
             <button
               className="user-button"

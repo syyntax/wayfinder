@@ -1,5 +1,11 @@
 import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse } from '../utils/helpers.js';
+import {
+    createNotificationsForUsers,
+    getCardMembers,
+    getUserDisplayName,
+    getLabelInfo
+} from '../services/notificationService.js';
 
 /**
  * Get a single card with full details
@@ -226,6 +232,25 @@ export function updateCard(req, res) {
             `).run(generateId(), req.user.id, card.board_id, id, JSON.stringify(changes), now);
         }
 
+        // Send priority change notification to card members
+        if (changes.priority) {
+            const cardMembers = getCardMembers(id);
+            const actorName = getUserDisplayName(req.user.id);
+            const priorityDisplay = changes.priority.to === 'none' ? 'None' :
+                changes.priority.to.charAt(0).toUpperCase() + changes.priority.to.slice(1);
+
+            createNotificationsForUsers(
+                cardMembers,
+                'priority_changed',
+                `Priority changed on "${card.title}"`,
+                `${actorName} changed priority to ${priorityDisplay}`,
+                'card',
+                id,
+                card.title,
+                req.user.id
+            );
+        }
+
         const updatedCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(id);
 
         res.json(apiResponse(true, { card: updatedCard }, 'Card updated'));
@@ -360,8 +385,40 @@ export function updateCardLabels(req, res) {
 
         if (action === 'add') {
             db.prepare('INSERT OR IGNORE INTO card_labels (card_id, label_id) VALUES (?, ?)').run(id, labelId);
+
+            // Create notification for label added
+            const cardMembers = getCardMembers(id);
+            const actorName = getUserDisplayName(req.user.id);
+            const labelName = label.name || label.color;
+
+            createNotificationsForUsers(
+                cardMembers,
+                'label_added',
+                `Label added to "${card.title}"`,
+                `${actorName} added label "${labelName}"`,
+                'card',
+                id,
+                card.title,
+                req.user.id
+            );
         } else if (action === 'remove') {
             db.prepare('DELETE FROM card_labels WHERE card_id = ? AND label_id = ?').run(id, labelId);
+
+            // Create notification for label removed
+            const cardMembers = getCardMembers(id);
+            const actorName = getUserDisplayName(req.user.id);
+            const labelName = label.name || label.color;
+
+            createNotificationsForUsers(
+                cardMembers,
+                'label_removed',
+                `Label removed from "${card.title}"`,
+                `${actorName} removed label "${labelName}"`,
+                'card',
+                id,
+                card.title,
+                req.user.id
+            );
         }
 
         // Get updated labels

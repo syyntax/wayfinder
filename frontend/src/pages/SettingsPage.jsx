@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import useNotificationStore from '../store/notificationStore';
 import { authApi, userApi, mailApi, userManagementApi, appSettingsApi } from '../utils/api';
 import './SettingsPage.css';
 
@@ -11,6 +12,7 @@ const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/web
 function SettingsPage() {
   const navigate = useNavigate();
   const { user, updateUser, logout } = useAuthStore();
+  const { reset: resetNotifications } = useNotificationStore();
   const [activeTab, setActiveTab] = useState('profile');
 
   // Profile state
@@ -643,6 +645,7 @@ function SettingsPage() {
   };
 
   const handleLogout = () => {
+    resetNotifications();
     logout();
     navigate('/login');
     toast.success('Logged out successfully');
