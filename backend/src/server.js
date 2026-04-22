@@ -112,8 +112,8 @@ const limiter = rateLimit({
 
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // 20 attempts per window
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS) || 20,
     message: { success: false, message: 'Too many authentication attempts, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false

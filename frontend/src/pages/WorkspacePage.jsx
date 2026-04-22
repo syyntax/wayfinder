@@ -14,7 +14,7 @@ function WorkspacePage() {
   const [boards, setBoards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -61,18 +61,18 @@ function WorkspacePage() {
   };
 
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) {
-      toast.error('Email is required');
+    if (!inviteUsername.trim()) {
+      toast.error('Username is required');
       return;
     }
 
     try {
       const response = await workspaceApi.invite(workspaceId, {
-        email: inviteEmail.trim(),
+        username: inviteUsername.trim(),
         role: inviteRole,
       });
       setMembers([...members, response.data.member]);
-      setInviteEmail('');
+      setInviteUsername('');
       setShowInvite(false);
       toast.success('Member invited');
     } catch (error) {
@@ -187,12 +187,12 @@ function WorkspacePage() {
             <div className="invite-form panel">
               <h3>Invite Member</h3>
               <div className="form-group">
-                <label>Email Address</label>
+                <label>Username</label>
                 <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="user@example.com"
+                  type="text"
+                  value={inviteUsername}
+                  onChange={(e) => setInviteUsername(e.target.value)}
+                  placeholder="username"
                 />
               </div>
               <div className="form-group">

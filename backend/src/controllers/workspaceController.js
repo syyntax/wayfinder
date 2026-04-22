@@ -160,7 +160,7 @@ export function updateWorkspace(req, res) {
 export function inviteToWorkspace(req, res) {
     try {
         const { id } = req.params;
-        const { email, role } = req.body;
+        const { username, role } = req.body;
         const db = getDatabase();
 
         // Check if user is owner or admin
@@ -172,8 +172,8 @@ export function inviteToWorkspace(req, res) {
             return res.status(403).json(apiResponse(false, null, 'Only owners and admins can invite members'));
         }
 
-        // Find user by email
-        const invitee = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+        // Find user by username
+        const invitee = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
         if (!invitee) {
             return res.status(404).json(apiResponse(false, null, 'User not found'));
         }
