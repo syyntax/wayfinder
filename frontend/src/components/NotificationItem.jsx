@@ -62,6 +62,12 @@ function NotificationItem({ notification, onClose }) {
             <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h3a1 1 0 100-2h-1V7z" />
           </svg>
         );
+      case 'user_mentioned':
+        return (
+          <svg viewBox="0 0 20 20" fill="currentColor" className="notification-icon notification-icon--mention">
+            <path fillRule="evenodd" d="M14.243 5.757a6 6 0 10-.986 9.284 1 1 0 111.087 1.678A8 8 0 1118 10a3 3 0 01-4.8 2.401A4 4 0 1114 10a1 1 0 102 0c0-1.537-.586-2.987-1.757-4.243zM12 10a2 2 0 10-4 0 2 2 0 004 0z" clipRule="evenodd" />
+          </svg>
+        );
       default:
         return (
           <svg viewBox="0 0 20 20" fill="currentColor" className="notification-icon">

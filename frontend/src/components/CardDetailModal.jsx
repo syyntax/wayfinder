@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { cardApi, commentApi, checklistApi, attachmentApi, coverApi } from '../utils/api';
@@ -7,6 +7,8 @@ import Checklist from './Checklist';
 import AttachmentsList from './AttachmentsList';
 import FileUploadZone, { formatFileSize } from './FileUploadZone';
 import MarkdownRenderer from './MarkdownRenderer';
+import MentionAutocomplete from './MentionAutocomplete';
+import { renderWithMentions } from '../utils/renderMentions';
 import './Modal.css';
 import './CardDetailModal.css';
 
@@ -46,6 +48,11 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
   const [descriptionSaveStatus, setDescriptionSaveStatus] = useState(''); // '', 'saving', 'saved', 'error'
   const descriptionTextareaRef = useRef(null);
   const saveTimeoutRef = useRef(null);
+
+  const memberUsernameSet = useMemo(
+    () => new Set((members || []).map(m => m.username.toLowerCase())),
+    [members]
+  );
 
   useEffect(() => {
     loadCard();
@@ -638,14 +645,15 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
 
               {isEditingDescription ? (
                 <div className="description-editor">
-                  <textarea
-                    ref={descriptionTextareaRef}
+                  <MentionAutocomplete
+                    textareaRef={descriptionTextareaRef}
                     value={descriptionDraft}
                     onChange={(e) => setDescriptionDraft(e.target.value)}
                     onKeyDown={handleDescriptionKeyDown}
                     placeholder="Add a more detailed description... (Markdown supported)"
                     className="card-description-input"
                     rows={8}
+                    members={members}
                   />
                   <div className="description-editor-hint">
                     <span className="markdown-hint">
@@ -687,7 +695,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                   }}
                 >
                   {card.description ? (
-                    <MarkdownRenderer content={card.description} />
+                    <MarkdownRenderer content={card.description} members={members} />
                   ) : (
                     <span className="description-placeholder">
                       <svg viewBox="0 0 20 20" fill="currentColor">
@@ -793,7 +801,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
               </h3>
 
               <div className="comment-form">
-                <textarea
+                <MentionAutocomplete
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write a comment..."
@@ -803,6 +811,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                       handleAddComment();
                     }
                   }}
+                  members={members}
                 />
                 <button
                   className="btn btn-primary btn-sm"
@@ -830,7 +839,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                           {format(new Date(comment.created_at), 'MMM d, yyyy h:mm a')}
                         </span>
                       </div>
-                      <p className="comment-text">{comment.content}</p>
+                      <p className="comment-text">{renderWithMentions(comment.content, memberUsernameSet)}</p>
                     </div>
                   </div>
                 ))}

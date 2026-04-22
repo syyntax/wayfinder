@@ -2,10 +2,16 @@ import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse } from '../utils/helpers.js';
 import {
     createNotificationsForUsers,
+    createNotification,
     getCardMembers,
     getCardInfo,
     getUserDisplayName
 } from '../services/notificationService.js';
+
+function extractMentions(text) {
+    const matches = text.match(/@([a-zA-Z0-9_]+)/g) || [];
+    return [...new Set(matches.map(m => m.slice(1)))];
+}
 
 /**
  * Get comments for a card
@@ -114,6 +120,31 @@ export function createComment(req, res) {
             req.user.id
         );
 
+        // Notify @mentioned workspace members
+        const mentionedUsernames = extractMentions(content);
+        if (mentionedUsernames.length > 0) {
+            const db2 = getDatabase();
+            for (const username of mentionedUsernames) {
+                const mentionedUser = db2.prepare(`
+                    SELECT u.id FROM users u
+                    JOIN workspace_members wm ON u.id = wm.user_id
+                    WHERE u.username = ? AND wm.workspace_id = ?
+                `).get(username, card.workspace_id);
+                if (mentionedUser) {
+                    createNotification(
+                        mentionedUser.id,
+                        'user_mentioned',
+                        `You were mentioned in "${card.title}"`,
+                        `${actorName} mentioned you in a comment`,
+                        'card',
+                        cardId,
+                        card.title,
+                        req.user.id
+                    );
+                }
+            }
+        }
+
         res.status(201).json(apiResponse(true, { comment }, 'Comment added'));
 
     } catch (error) {
@@ -144,6 +175,38 @@ export function updateComment(req, res) {
         const now = new Date().toISOString();
         db.prepare('UPDATE comments SET content = ?, is_edited = 1, updated_at = ? WHERE id = ?')
             .run(content, now, id);
+
+        // Get card info for mention notifications
+        const updatedCard = db.prepare(`
+            SELECT c.title, b.workspace_id FROM cards c
+            JOIN lists l ON c.list_id = l.id
+            JOIN boards b ON l.board_id = b.id
+            WHERE c.id = ?
+        `).get(comment.card_id);
+
+        const mentionedUsernames = extractMentions(content);
+        if (mentionedUsernames.length > 0 && updatedCard) {
+            const actorName = getUserDisplayName(req.user.id);
+            for (const username of mentionedUsernames) {
+                const mentionedUser = db.prepare(`
+                    SELECT u.id FROM users u
+                    JOIN workspace_members wm ON u.id = wm.user_id
+                    WHERE u.username = ? AND wm.workspace_id = ?
+                `).get(username, updatedCard.workspace_id);
+                if (mentionedUser) {
+                    createNotification(
+                        mentionedUser.id,
+                        'user_mentioned',
+                        `You were mentioned in "${updatedCard.title}"`,
+                        `${actorName} mentioned you in a comment`,
+                        'card',
+                        comment.card_id,
+                        updatedCard.title,
+                        req.user.id
+                    );
+                }
+            }
+        }
 
         const updatedComment = db.prepare(`
             SELECT c.*, u.username, u.display_name, u.avatar_url

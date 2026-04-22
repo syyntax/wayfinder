@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { renderWithMentions } from '../utils/renderMentions';
 import './MarkdownRenderer.css';
 
 /**
@@ -7,10 +9,15 @@ import './MarkdownRenderer.css';
  * Renders markdown content with dark fantasy cyberpunk styling.
  * Supports GitHub Flavored Markdown (tables, strikethrough, task lists, etc.)
  */
-function MarkdownRenderer({ content, className = '' }) {
+function MarkdownRenderer({ content, className = '', members = [] }) {
   if (!content) {
     return null;
   }
+
+  const validUsernames = useMemo(
+    () => new Set(members.map(m => m.username.toLowerCase())),
+    [members]
+  );
 
   return (
     <div className={`markdown-content ${className}`}>
@@ -30,6 +37,15 @@ function MarkdownRenderer({ content, className = '' }) {
               </a>
             );
           },
+          p: ({ node, children, ...props }) => (
+            <p {...props}>
+              {Array.isArray(children)
+                ? children.map((child, i) =>
+                    typeof child === 'string' ? renderWithMentions(child, validUsernames) : child
+                  )
+                : typeof children === 'string' ? renderWithMentions(children, validUsernames) : children}
+            </p>
+          ),
           // Handle pre element for code blocks (triple backticks)
           // In react-markdown v9, fenced code blocks render as <pre><code>content</code></pre>
           pre: ({ node, children, ...props }) => {

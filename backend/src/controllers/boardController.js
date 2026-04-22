@@ -131,7 +131,7 @@ export function getBoard(req, res) {
             board,
             lists,
             labels,
-            members: members.length > 0 ? members : workspaceMembers
+            members: workspaceMembers
         }));
 
     } catch (error) {

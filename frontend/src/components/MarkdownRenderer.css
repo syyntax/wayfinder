@@ -555,3 +555,18 @@
     padding: var(--space-xs) var(--space-sm);
   }
 }
+
+.mention {
+  color: var(--color-neon-cyan);
+  background: rgba(0, 229, 255, 0.08);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-weight: 600;
+  font-size: 0.95em;
+  cursor: default;
+  transition: background var(--transition-fast);
+}
+
+.mention:hover {
+  background: rgba(0, 229, 255, 0.18);
+}

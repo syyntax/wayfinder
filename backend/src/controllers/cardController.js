@@ -2,10 +2,16 @@ import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse } from '../utils/helpers.js';
 import {
     createNotificationsForUsers,
+    createNotification,
     getCardMembers,
     getUserDisplayName,
     getLabelInfo
 } from '../services/notificationService.js';
+
+function extractMentions(text) {
+    const matches = text.match(/@([a-zA-Z0-9_]+)/g) || [];
+    return [...new Set(matches.map(m => m.slice(1)))];
+}
 
 /**
  * Get a single card with full details
@@ -249,6 +255,31 @@ export function updateCard(req, res) {
                 card.title,
                 req.user.id
             );
+        }
+
+        // Notify @mentioned workspace members in description
+        if (description !== undefined) {
+            const mentionedUsernames = extractMentions(description);
+            const actorName = getUserDisplayName(req.user.id);
+            for (const username of mentionedUsernames) {
+                const mentionedUser = db.prepare(`
+                    SELECT u.id FROM users u
+                    JOIN workspace_members wm ON u.id = wm.user_id
+                    WHERE u.username = ? AND wm.workspace_id = ?
+                `).get(username, card.workspace_id);
+                if (mentionedUser) {
+                    createNotification(
+                        mentionedUser.id,
+                        'user_mentioned',
+                        `You were mentioned in "${card.title}"`,
+                        `${actorName} mentioned you in a card description`,
+                        'card',
+                        id,
+                        card.title,
+                        req.user.id
+                    );
+                }
+            }
         }
 
         const updatedCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(id);
