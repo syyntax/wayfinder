@@ -8,6 +8,61 @@ import './SettingsPage.css';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const AVATAR_MAX_DIMENSION = 512;
+const AVATAR_JPEG_QUALITY = 0.85;
+const AVATAR_COMPRESS_THRESHOLD = 512 * 1024; // compress files over 512 KB
+
+function compressAvatarImage(file) {
+  return new Promise((resolve) => {
+    if (file.size <= AVATAR_COMPRESS_THRESHOLD) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let { width, height } = img;
+      if (width > AVATAR_MAX_DIMENSION || height > AVATAR_MAX_DIMENSION) {
+        if (width >= height) {
+          height = Math.round((height * AVATAR_MAX_DIMENSION) / width);
+          width = AVATAR_MAX_DIMENSION;
+        } else {
+          width = Math.round((width * AVATAR_MAX_DIMENSION) / height);
+          height = AVATAR_MAX_DIMENSION;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          const baseName = file.name.replace(/\.[^.]+$/, '');
+          const compressed = new File([blob], `${baseName}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressed);
+        },
+        'image/jpeg',
+        AVATAR_JPEG_QUALITY
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+
+    img.src = objectUrl;
+  });
+}
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -576,29 +631,28 @@ function SettingsPage() {
     }
   };
 
-  const handleAvatarSelect = (e) => {
+  const handleAvatarSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
       toast.error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.');
       return;
     }
 
-    // Validate file size
     if (file.size > MAX_AVATAR_SIZE) {
       toast.error('File size must be less than 5 MB');
       return;
     }
 
-    // Create preview
+    const processedFile = await compressAvatarImage(file);
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setAvatarPreview(e.target.result);
+    reader.onload = (evt) => {
+      setAvatarPreview(evt.target.result);
     };
-    reader.readAsDataURL(file);
-    setSelectedAvatarFile(file);
+    reader.readAsDataURL(processedFile);
+    setSelectedAvatarFile(processedFile);
   };
 
   const handleAvatarUpload = async () => {

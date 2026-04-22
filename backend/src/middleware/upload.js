@@ -206,6 +206,12 @@ export const uploadAvatar = multer({
  * Error handling middleware for multer errors
  */
 export function handleMulterError(err, req, res, next) {
+    if (!err) return next();
+
+    // Drain the remaining request body so the browser receives the error response
+    // cleanly rather than seeing a TCP connection reset mid-upload.
+    req.resume();
+
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
@@ -225,14 +231,10 @@ export function handleMulterError(err, req, res, next) {
         });
     }
 
-    if (err) {
-        return res.status(400).json({
-            success: false,
-            message: err.message || 'File upload failed'
-        });
-    }
-
-    next();
+    return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed'
+    });
 }
 
 // Export directories for use in other modules
