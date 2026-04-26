@@ -42,7 +42,7 @@ router.patch('/:id', [
 // Invite member to workspace
 router.post('/:id/invite', [
     param('id').isUUID().withMessage('Invalid workspace ID'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
+    body('username').isLength({ min: 1, max: 50 }).trim().withMessage('Username required'),
     body('role').optional().isIn(['admin', 'member']).withMessage('Role must be admin or member'),
     handleValidationErrors
 ], inviteToWorkspace);

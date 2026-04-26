@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { workspaceApi } from '../utils/api';
 import useAuthStore from '../store/authStore';
+import '../components/MentionAutocomplete.css';
 import './WorkspacePage.css';
 
 function WorkspacePage() {
@@ -16,6 +17,9 @@ function WorkspacePage() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
+  const [userSuggestions, setUserSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -23,6 +27,48 @@ function WorkspacePage() {
   useEffect(() => {
     loadWorkspace();
   }, [workspaceId]);
+
+  useEffect(() => {
+    const trimmed = inviteUsername.trim();
+    if (trimmed.length < 2) {
+      setUserSuggestions([]);
+      setShowSuggestions(false);
+      setIsSearchingUsers(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearchingUsers(true);
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await workspaceApi.searchUsers(trimmed);
+        if (cancelled) return;
+
+        const memberIds = new Set(members.map((m) => m.id));
+        const filtered = (response.data?.users || []).filter(
+          (u) => !memberIds.has(u.id)
+        );
+
+        setUserSuggestions(filtered);
+        setShowSuggestions(filtered.length > 0);
+      } catch (error) {
+        if (!cancelled) {
+          setUserSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSearchingUsers(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [inviteUsername, members]);
 
   const loadWorkspace = async () => {
     setIsLoading(true);
@@ -73,6 +119,8 @@ function WorkspacePage() {
       });
       setMembers([...members, response.data.member]);
       setInviteUsername('');
+      setUserSuggestions([]);
+      setShowSuggestions(false);
       setShowInvite(false);
       toast.success('Member invited');
     } catch (error) {
@@ -188,12 +236,63 @@ function WorkspacePage() {
               <h3>Invite Member</h3>
               <div className="form-group">
                 <label>Username</label>
-                <input
-                  type="text"
-                  value={inviteUsername}
-                  onChange={(e) => setInviteUsername(e.target.value)}
-                  placeholder="username"
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={inviteUsername}
+                    onChange={(e) => setInviteUsername(e.target.value)}
+                    onFocus={() => {
+                      if (userSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowSuggestions(false), 150);
+                    }}
+                    placeholder="username"
+                    autoComplete="off"
+                  />
+                  {showSuggestions && userSuggestions.length > 0 && (
+                    <div className="mention-suggestions">
+                      {userSuggestions.map((suggestedUser) => (
+                        <button
+                          key={suggestedUser.id}
+                          type="button"
+                          className="mention-suggestion-item"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setInviteUsername(suggestedUser.username);
+                            setShowSuggestions(false);
+                            setUserSuggestions([]);
+                          }}
+                        >
+                          <div className="mention-suggestion-avatar">
+                            {suggestedUser.avatar_url ? (
+                              <img
+                                src={suggestedUser.avatar_url}
+                                alt={suggestedUser.display_name || suggestedUser.username}
+                              />
+                            ) : (
+                              <span>
+                                {(suggestedUser.display_name || suggestedUser.username)[0].toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mention-suggestion-info">
+                            <span className="mention-suggestion-username">
+                              {suggestedUser.username}
+                            </span>
+                            {suggestedUser.display_name && (
+                              <span className="mention-suggestion-display">
+                                {suggestedUser.display_name}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="form-group">
                 <label>Role</label>
@@ -206,7 +305,14 @@ function WorkspacePage() {
                 <button className="btn btn-primary" onClick={handleInvite}>
                   Send Invite
                 </button>
-                <button className="btn btn-ghost" onClick={() => setShowInvite(false)}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    setShowInvite(false);
+                    setUserSuggestions([]);
+                    setShowSuggestions(false);
+                  }}
+                >
                   Cancel
                 </button>
               </div>
