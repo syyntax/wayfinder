@@ -1,9 +1,11 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
+import useBoardStore from '../store/boardStore';
 import './KanbanCard.css';
 
 function KanbanCard({ card, onClick, isDragging: isDraggingProp }) {
+  const { priorities } = useBoardStore();
   const {
     attributes,
     listeners,
@@ -42,16 +44,17 @@ function KanbanCard({ card, onClick, isDragging: isDraggingProp }) {
     return '';
   };
 
-  const getPriorityClass = (priority) => {
-    const classes = {
-      critical: 'priority-critical',
-      high: 'priority-high',
-      medium: 'priority-medium',
-      low: 'priority-low',
-    };
-    return classes[priority] || '';
+  // Resolve a priority value to its configured color from the current board's
+  // priority list. Returns null when there is no configuration or it's 'none'.
+  const getPriorityColor = (value) => {
+    if (!value || value === 'none') return null;
+    const p = (priorities || []).find(p => p.value === value);
+    if (!p) return null;
+    if (!p.color || p.color === 'transparent') return null;
+    return p.color;
   };
 
+  const priorityColor = getPriorityColor(card.priority);
   const hasChecklist = card.checklist_total > 0;
   const checklistProgress = hasChecklist
     ? Math.round((card.checklist_completed / card.checklist_total) * 100)
@@ -63,7 +66,7 @@ function KanbanCard({ card, onClick, isDragging: isDraggingProp }) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`kanban-card ${isDragging ? 'dragging' : ''} ${getPriorityClass(card.priority)} ${card.cover_image ? 'has-cover' : ''}`}
+      className={`kanban-card ${isDragging || isDraggingProp ? 'dragging' : ''} ${card.cover_image ? 'has-cover' : ''}`}
       onClick={onClick}
     >
       {/* Cover Image */}
@@ -161,9 +164,15 @@ function KanbanCard({ card, onClick, isDragging: isDraggingProp }) {
         </div>
       )}
 
-      {/* Priority indicator bar */}
-      {card.priority && card.priority !== 'none' && (
-        <div className={`priority-bar ${getPriorityClass(card.priority)}`} />
+      {/* Priority indicator bar (color comes from the board's priority config) */}
+      {priorityColor && (
+        <div
+          className="priority-bar"
+          style={{
+            background: priorityColor,
+            boxShadow: `0 0 8px ${priorityColor}60`,
+          }}
+        />
       )}
     </div>
   );

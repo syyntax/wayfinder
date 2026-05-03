@@ -110,6 +110,13 @@ export const boardApi = {
   update: (id, data) => request(`/boards/${id}`, { method: 'PATCH', body: data }),
   delete: (id) => request(`/boards/${id}`, { method: 'DELETE' }),
 
+  // Per-board priorities
+  getPriorities: (boardId) => request(`/boards/${boardId}/priorities`),
+  updatePriorities: (boardId, priorities) => request(`/boards/${boardId}/priorities`, {
+    method: 'PUT',
+    body: { priorities }
+  }),
+
   // Export board to JSON file
   exportBoard: async (boardId, options = {}) => {
     const token = localStorage.getItem('wayfinder_token');

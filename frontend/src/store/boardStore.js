@@ -7,6 +7,7 @@ const useBoardStore = create((set, get) => ({
   lists: [],
   labels: [],
   members: [],
+  priorities: [],
   isLoading: false,
   error: null,
 
@@ -27,12 +28,13 @@ const useBoardStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await boardApi.getOne(boardId);
-      const { board, lists, labels, members } = response.data;
+      const { board, lists, labels, members, priorities } = response.data;
       set({
         currentBoard: board,
         lists,
         labels,
         members,
+        priorities: priorities || [],
         isLoading: false,
       });
     } catch (error) {
@@ -254,6 +256,7 @@ const useBoardStore = create((set, get) => ({
       lists: [],
       labels: [],
       members: [],
+      priorities: [],
     });
   },
 
@@ -265,6 +268,11 @@ const useBoardStore = create((set, get) => ({
   // Set labels (for updates without refetching)
   setLabels: (labels) => {
     set({ labels });
+  },
+
+  // Set priorities (for updates without refetching)
+  setPriorities: (priorities) => {
+    set({ priorities });
   },
 }));
 

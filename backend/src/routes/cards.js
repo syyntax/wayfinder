@@ -21,7 +21,7 @@ router.post('/', [
     body('listId').isUUID().withMessage('Valid list ID required'),
     body('description').optional().isLength({ max: 5000 }),
     body('dueDate').optional().isISO8601(),
-    body('priority').optional().isIn(['none', 'low', 'medium', 'high', 'critical']),
+    body('priority').optional().isString().isLength({ max: 50 }).withMessage('Invalid priority'),
     handleValidationErrors
 ], createCard);
 
@@ -31,7 +31,7 @@ router.patch('/:id', [
     body('title').optional().isLength({ min: 1, max: 200 }).trim(),
     body('description').optional().isLength({ max: 5000 }),
     body('dueDate').optional({ nullable: true }).isISO8601(),
-    body('priority').optional().isIn(['none', 'low', 'medium', 'high', 'critical']),
+    body('priority').optional().isString().isLength({ max: 50 }).withMessage('Invalid priority'),
     body('status').optional().isIn(['active', 'blocked', 'in_review', 'complete']),
     body('coverImage').optional({ nullable: true }).isString().isLength({ max: 2000 }),
     body('cover_image').optional({ nullable: true }).isString().isLength({ max: 2000 }),

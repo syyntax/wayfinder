@@ -25,7 +25,7 @@ const PRESET_COLORS = [
 ];
 
 function BoardSettingsModal({ board, onClose, onUpdate }) {
-  const { labels, setLabels } = useBoardStore();
+  const { labels, setLabels, priorities, setPriorities } = useBoardStore();
   const { selectedWorkspace } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('general');
@@ -53,6 +53,13 @@ function BoardSettingsModal({ board, onClose, onUpdate }) {
   const [newLabelColor, setNewLabelColor] = useState('#8b5cf6');
   const [showNewLabel, setShowNewLabel] = useState(false);
 
+  // Priority management state
+  const [editingPriorities, setEditingPriorities] = useState(null);
+  const [isSavingPriorities, setIsSavingPriorities] = useState(false);
+  const [newPriorityLabel, setNewPriorityLabel] = useState('');
+  const [newPriorityColor, setNewPriorityColor] = useState('#8b5cf6');
+  const [openPriorityColorIdx, setOpenPriorityColorIdx] = useState(null);
+
   // Import/Export state
   const [exportOptions, setExportOptions] = useState({
     includeComments: true,
@@ -76,6 +83,15 @@ function BoardSettingsModal({ board, onClose, onUpdate }) {
     });
     return () => cancelAnimationFrame(timer);
   }, []);
+
+  // When opening the priorities tab, snapshot the current priorities into a
+  // local editing copy so changes can be discarded without affecting the
+  // global store until saved.
+  useEffect(() => {
+    if (activeTab === 'priorities' && editingPriorities === null) {
+      setEditingPriorities(priorities.map(p => ({ ...p })));
+    }
+  }, [activeTab, priorities, editingPriorities]);
 
   // Handle close with animation
   const handleClose = useCallback(() => {
@@ -235,6 +251,99 @@ function BoardSettingsModal({ board, onClose, onUpdate }) {
     } catch (error) {
       toast.error('Failed to delete label');
     }
+  };
+
+  // ----- Priority management helpers -----
+
+  // Generate a slug-like value from a label, ensuring uniqueness within the
+  // current editing list.
+  const generatePriorityValue = (label, existing) => {
+    const base = label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'priority';
+    const taken = new Set(existing.map(p => p.value));
+    if (!taken.has(base)) return base;
+    let i = 2;
+    while (taken.has(`${base}_${i}`)) i++;
+    return `${base}_${i}`;
+  };
+
+  const handleEditPriorityLabel = (idx, value) => {
+    setEditingPriorities(prev =>
+      prev.map((p, i) => (i === idx ? { ...p, label: value } : p))
+    );
+  };
+
+  const handleEditPriorityColor = (idx, color) => {
+    setEditingPriorities(prev =>
+      prev.map((p, i) => (i === idx ? { ...p, color } : p))
+    );
+  };
+
+  const handleDeletePriority = (idx) => {
+    setEditingPriorities(prev => {
+      const target = prev[idx];
+      if (target?.value === 'none') return prev; // never delete 'none'
+      return prev.filter((_, i) => i !== idx);
+    });
+    setOpenPriorityColorIdx(null);
+  };
+
+  const handleAddPriority = () => {
+    const label = newPriorityLabel.trim();
+    if (!label) {
+      toast.error('Priority label is required');
+      return;
+    }
+    const list = editingPriorities || [];
+    const value = generatePriorityValue(label, list);
+    setEditingPriorities([
+      ...list,
+      { value, label, color: newPriorityColor, position: list.length },
+    ]);
+    setNewPriorityLabel('');
+    setNewPriorityColor('#8b5cf6');
+  };
+
+  const handleSavePriorities = async () => {
+    const list = editingPriorities || [];
+    // Need at least 'none' plus one real priority
+    const nonNoneCount = list.filter(p => p.value !== 'none').length;
+    if (nonNoneCount < 1) {
+      toast.error('At least one priority other than None is required');
+      return;
+    }
+    // Validate labels are non-empty
+    if (list.some(p => !p.label || !p.label.trim())) {
+      toast.error('All priorities must have a label');
+      return;
+    }
+
+    setIsSavingPriorities(true);
+    try {
+      const payload = list.map((p, idx) => ({
+        value: p.value,
+        label: p.label.trim(),
+        color: p.color,
+        position: idx,
+      }));
+      const response = await boardApi.updatePriorities(board.id, payload);
+      const saved = response.data.priorities || [];
+      setPriorities(saved);
+      setEditingPriorities(saved.map(p => ({ ...p })));
+      setOpenPriorityColorIdx(null);
+      toast.success('Priorities updated');
+    } catch (error) {
+      toast.error(error.message || 'Failed to update priorities');
+    } finally {
+      setIsSavingPriorities(false);
+    }
+  };
+
+  const handleResetPriorities = () => {
+    setEditingPriorities(priorities.map(p => ({ ...p })));
+    setOpenPriorityColorIdx(null);
   };
 
   // Export board handler
@@ -441,6 +550,19 @@ function BoardSettingsModal({ board, onClose, onUpdate }) {
               <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clipRule="evenodd" />
             </svg>
             Theme
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'priorities' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('priorities');
+              setEditingPriorities(priorities.map(p => ({ ...p })));
+              setOpenPriorityColorIdx(null);
+            }}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+            </svg>
+            Priorities
           </button>
         </div>
 
@@ -1010,6 +1132,138 @@ function BoardSettingsModal({ board, onClose, onUpdate }) {
                   disabled={isSaving}
                 >
                   {isSaving ? 'Saving...' : 'Apply Theme'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'priorities' && (
+            <div className="settings-panel">
+              <div className="labels-header">
+                <p className="labels-description">
+                  Customize the priority levels available on this board. Rename, recolor,
+                  add, or remove priorities. The "None" priority is required and cannot be removed.
+                </p>
+              </div>
+
+              <div className="priorities-list">
+                {(editingPriorities || []).map((p, idx) => {
+                  const isNone = p.value === 'none';
+                  const isColorOpen = openPriorityColorIdx === idx;
+                  return (
+                    <div key={`${p.value}-${idx}`} className="priority-item">
+                      <div className="priority-item-row">
+                        <button
+                          type="button"
+                          className="priority-swatch"
+                          style={{
+                            background: isNone ? 'transparent' : p.color,
+                            borderStyle: isNone ? 'dashed' : 'solid',
+                          }}
+                          onClick={() => setOpenPriorityColorIdx(isColorOpen ? null : idx)}
+                          disabled={isNone}
+                          title={isNone ? 'None has no color' : 'Change color'}
+                          aria-label="Change priority color"
+                        />
+                        <input
+                          type="text"
+                          className="priority-label-input"
+                          value={p.label}
+                          onChange={(e) => handleEditPriorityLabel(idx, e.target.value)}
+                          placeholder="Priority name"
+                          maxLength={50}
+                        />
+                        {!isNone ? (
+                          <button
+                            className="label-action-btn danger"
+                            onClick={() => handleDeletePriority(idx)}
+                            title="Delete priority"
+                            aria-label="Delete priority"
+                          >
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <button
+                            className="label-action-btn"
+                            disabled
+                            title="The None priority cannot be removed"
+                            aria-label="None cannot be removed"
+                          >
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {isColorOpen && !isNone && (
+                        <div className="color-picker compact priority-color-picker">
+                          {PRESET_COLORS.map(color => (
+                            <button
+                              key={color}
+                              className={`color-swatch ${p.color === color ? 'selected' : ''}`}
+                              style={{ background: color }}
+                              onClick={() => {
+                                handleEditPriorityColor(idx, color);
+                                setOpenPriorityColorIdx(null);
+                              }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="label-edit-form priority-add-form">
+                <div className="form-group">
+                  <label>Add a Priority</label>
+                  <input
+                    type="text"
+                    value={newPriorityLabel}
+                    onChange={(e) => setNewPriorityLabel(e.target.value)}
+                    placeholder="e.g. Urgent, Wishlist, Blocker..."
+                    maxLength={50}
+                  />
+                </div>
+                <div className="color-picker">
+                  {PRESET_COLORS.map(color => (
+                    <button
+                      key={color}
+                      className={`color-swatch ${newPriorityColor === color ? 'selected' : ''}`}
+                      style={{ background: color }}
+                      onClick={() => setNewPriorityColor(color)}
+                    />
+                  ))}
+                </div>
+                <div className="label-edit-actions">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleAddPriority}
+                    disabled={!newPriorityLabel.trim()}
+                  >
+                    Add Priority
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  className="btn btn-ghost"
+                  onClick={handleResetPriorities}
+                  disabled={isSavingPriorities}
+                >
+                  Reset
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSavePriorities}
+                  disabled={isSavingPriorities}
+                >
+                  {isSavingPriorities ? 'Saving...' : 'Save Priorities'}
                 </button>
               </div>
             </div>

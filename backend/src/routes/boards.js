@@ -7,7 +7,9 @@ import {
     deleteBoard,
     exportBoard,
     importBoard,
-    previewImport
+    previewImport,
+    getBoardPriorities,
+    updateBoardPriorities
 } from '../controllers/boardController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { boardValidation } from '../middleware/validators.js';
@@ -41,6 +43,17 @@ router.post('/import', [
 
 // Preview import data without actually importing
 router.post('/import/preview', previewImport);
+
+// Per-board priority configuration (must come before /:id catch-alls)
+router.get('/:id/priorities', [
+    param('id').isUUID().withMessage('Invalid board ID'),
+    handleValidationErrors
+], getBoardPriorities);
+
+router.put('/:id/priorities', [
+    param('id').isUUID().withMessage('Invalid board ID'),
+    handleValidationErrors
+], updateBoardPriorities);
 
 // Get single board with lists and cards
 router.get('/:id', [

@@ -1,6 +1,16 @@
 import { getDatabase } from '../db/database.js';
 import { generateId, apiResponse } from '../utils/helpers.js';
 
+// Default priorities used when seeding a new board, or as a fallback when
+// no priorities have been configured yet for an existing board.
+const DEFAULT_PRIORITIES = [
+    { value: 'none',     label: 'None',     color: 'transparent', position: 0 },
+    { value: 'low',      label: 'Low',      color: '#06b6d4',     position: 1 },
+    { value: 'medium',   label: 'Medium',   color: '#8b5cf6',     position: 2 },
+    { value: 'high',     label: 'High',     color: '#f97316',     position: 3 },
+    { value: 'critical', label: 'Critical', color: '#dc2626',     position: 4 },
+];
+
 /**
  * Get all boards for the current user
  */
@@ -127,11 +137,20 @@ export function getBoard(req, res) {
             WHERE wm.workspace_id = ?
         `).all(board.workspace_id);
 
+        // Get per-board priorities, falling back to defaults if none configured
+        let priorities = db.prepare(
+            'SELECT * FROM board_priorities WHERE board_id = ? ORDER BY position ASC'
+        ).all(id);
+        if (priorities.length === 0) {
+            priorities = DEFAULT_PRIORITIES;
+        }
+
         res.json(apiResponse(true, {
             board,
             lists,
             labels,
-            members: workspaceMembers
+            members: workspaceMembers,
+            priorities
         }));
 
     } catch (error) {
@@ -185,6 +204,14 @@ export function createBoard(req, res) {
         const labelStmt = db.prepare('INSERT INTO labels (id, board_id, name, color) VALUES (?, ?, ?, ?)');
         for (const label of defaultLabels) {
             labelStmt.run(generateId(), boardId, label.name, label.color);
+        }
+
+        // Seed default per-board priorities
+        const priorityStmt = db.prepare(
+            'INSERT INTO board_priorities (id, board_id, value, label, color, position) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        for (const p of DEFAULT_PRIORITIES) {
+            priorityStmt.run(generateId(), boardId, p.value, p.label, p.color, p.position);
         }
 
         // Log activity
@@ -894,6 +921,137 @@ export function previewImport(req, res) {
     }
 }
 
+/**
+ * Get the priority configuration for a board.
+ * Falls back to DEFAULT_PRIORITIES when none are stored yet.
+ */
+export function getBoardPriorities(req, res) {
+    try {
+        const { id } = req.params;
+        const db = getDatabase();
+
+        const board = db.prepare('SELECT workspace_id FROM boards WHERE id = ?').get(id);
+        if (!board) {
+            return res.status(404).json(apiResponse(false, null, 'Board not found'));
+        }
+
+        const hasAccess = db.prepare(
+            'SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+        ).get(board.workspace_id, req.user.id);
+
+        if (!hasAccess) {
+            return res.status(403).json(apiResponse(false, null, 'Access denied'));
+        }
+
+        let priorities = db.prepare(
+            'SELECT * FROM board_priorities WHERE board_id = ? ORDER BY position ASC'
+        ).all(id);
+        if (priorities.length === 0) {
+            priorities = DEFAULT_PRIORITIES;
+        }
+
+        res.json(apiResponse(true, { priorities }));
+    } catch (error) {
+        console.error('Get board priorities error:', error);
+        res.status(500).json(apiResponse(false, null, 'Failed to get priorities'));
+    }
+}
+
+/**
+ * Replace the entire priority configuration for a board.
+ * Only workspace owners/admins (or super admins) may update priorities.
+ * The 'none' priority is preserved as a sentinel and cannot be removed.
+ */
+export function updateBoardPriorities(req, res) {
+    try {
+        const { id } = req.params;
+        const { priorities } = req.body;
+        const db = getDatabase();
+
+        const board = db.prepare('SELECT workspace_id FROM boards WHERE id = ?').get(id);
+        if (!board) {
+            return res.status(404).json(apiResponse(false, null, 'Board not found'));
+        }
+
+        const membership = db.prepare(
+            'SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?'
+        ).get(board.workspace_id, req.user.id);
+
+        const isPrivileged =
+            membership && (membership.role === 'owner' || membership.role === 'admin');
+        const isSuperAdmin = req.user.role === 'super_admin';
+
+        if (!isPrivileged && !isSuperAdmin) {
+            return res.status(403).json(
+                apiResponse(false, null, 'Only workspace owners and admins can update priorities')
+            );
+        }
+
+        if (!Array.isArray(priorities) || priorities.length === 0) {
+            return res.status(400).json(
+                apiResponse(false, null, 'Priorities must be a non-empty array')
+            );
+        }
+
+        // Validate that 'none' is preserved
+        const hasNone = priorities.some(p => p && p.value === 'none');
+        if (!hasNone) {
+            return res.status(400).json(
+                apiResponse(false, null, "The 'none' priority cannot be removed")
+            );
+        }
+
+        // Validate basic shape: each entry needs a value and label
+        for (const p of priorities) {
+            if (!p || typeof p.value !== 'string' || typeof p.label !== 'string' ||
+                p.value.trim().length === 0 || p.label.trim().length === 0) {
+                return res.status(400).json(
+                    apiResponse(false, null, 'Each priority needs a non-empty value and label')
+                );
+            }
+        }
+
+        // Check for duplicate values
+        const seenValues = new Set();
+        for (const p of priorities) {
+            if (seenValues.has(p.value)) {
+                return res.status(400).json(
+                    apiResponse(false, null, `Duplicate priority value: ${p.value}`)
+                );
+            }
+            seenValues.add(p.value);
+        }
+
+        // Replace all priorities for this board atomically
+        const tx = db.transaction(() => {
+            db.prepare('DELETE FROM board_priorities WHERE board_id = ?').run(id);
+            const stmt = db.prepare(
+                'INSERT INTO board_priorities (id, board_id, value, label, color, position) VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            priorities.forEach((p, idx) => {
+                stmt.run(
+                    generateId(),
+                    id,
+                    p.value,
+                    p.label,
+                    p.color || '#8b5cf6',
+                    idx
+                );
+            });
+        });
+        tx();
+
+        const saved = db.prepare(
+            'SELECT * FROM board_priorities WHERE board_id = ? ORDER BY position ASC'
+        ).all(id);
+
+        res.json(apiResponse(true, { priorities: saved }, 'Priorities updated'));
+    } catch (error) {
+        console.error('Update board priorities error:', error);
+        res.status(500).json(apiResponse(false, null, 'Failed to update priorities'));
+    }
+}
+
 export default {
     getBoards,
     getBoard,
@@ -902,5 +1060,7 @@ export default {
     deleteBoard,
     exportBoard,
     importBoard,
-    previewImport
+    previewImport,
+    getBoardPriorities,
+    updateBoardPriorities
 };

@@ -110,7 +110,8 @@ export const cardValidation = [
         .withMessage('Invalid date format'),
     body('priority')
         .optional()
-        .isIn(['none', 'low', 'medium', 'high', 'critical'])
+        .isString()
+        .isLength({ max: 50 })
         .withMessage('Invalid priority'),
     handleValidationErrors
 ];

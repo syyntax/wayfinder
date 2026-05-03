@@ -13,7 +13,7 @@ import './Modal.css';
 import './CardDetailModal.css';
 
 function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
-  const { updateCard, updateCardLabels, updateCardAssignees, deleteCard } = useBoardStore();
+  const { updateCard, updateCardLabels, updateCardAssignees, deleteCard, priorities } = useBoardStore();
   const [card, setCard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -505,12 +505,14 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
 
   if (!card) return null;
 
-  const priorityOptions = [
+  // Use the board's custom priority configuration when available, otherwise
+  // fall back to a sensible default set so the picker still works on legacy boards.
+  const priorityOptions = (priorities && priorities.length > 0) ? priorities : [
     { value: 'none', label: 'None', color: 'transparent' },
-    { value: 'low', label: 'Low', color: 'var(--color-neon-cyan)' },
-    { value: 'medium', label: 'Medium', color: 'var(--color-cyber-purple)' },
-    { value: 'high', label: 'High', color: 'var(--color-ember-orange)' },
-    { value: 'critical', label: 'Critical', color: 'var(--color-blood-red)' },
+    { value: 'low', label: 'Low', color: '#06b6d4' },
+    { value: 'medium', label: 'Medium', color: '#8b5cf6' },
+    { value: 'high', label: 'High', color: '#f97316' },
+    { value: 'critical', label: 'Critical', color: '#dc2626' },
   ];
 
   return (

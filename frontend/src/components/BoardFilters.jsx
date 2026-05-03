@@ -3,7 +3,7 @@ import useBoardStore from '../store/boardStore';
 import './BoardFilters.css';
 
 function BoardFilters({ filters, onFilterChange }) {
-  const { labels, members } = useBoardStore();
+  const { labels, members, priorities } = useBoardStore();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const filterRef = useRef(null);
@@ -250,34 +250,22 @@ function BoardFilters({ filters, onFilterChange }) {
               Priority
             </h4>
             <div className="filter-options priority-filter">
-              <button
-                className={`filter-priority ${filters.priorities?.includes('critical') ? 'selected' : ''}`}
-                onClick={() => handlePriorityFilter('critical')}
-              >
-                <span className="priority-indicator" style={{ background: '#dc2626' }} />
-                Critical
-              </button>
-              <button
-                className={`filter-priority ${filters.priorities?.includes('high') ? 'selected' : ''}`}
-                onClick={() => handlePriorityFilter('high')}
-              >
-                <span className="priority-indicator" style={{ background: '#f97316' }} />
-                High
-              </button>
-              <button
-                className={`filter-priority ${filters.priorities?.includes('medium') ? 'selected' : ''}`}
-                onClick={() => handlePriorityFilter('medium')}
-              >
-                <span className="priority-indicator" style={{ background: '#eab308' }} />
-                Medium
-              </button>
-              <button
-                className={`filter-priority ${filters.priorities?.includes('low') ? 'selected' : ''}`}
-                onClick={() => handlePriorityFilter('low')}
-              >
-                <span className="priority-indicator" style={{ background: '#22c55e' }} />
-                Low
-              </button>
+              {(priorities || [])
+                .filter(p => p.value !== 'none')
+                .map(p => (
+                  <button
+                    key={p.value}
+                    className={`filter-priority ${filters.priorities?.includes(p.value) ? 'selected' : ''}`}
+                    onClick={() => handlePriorityFilter(p.value)}
+                  >
+                    <span className="priority-indicator" style={{ background: p.color }} />
+                    {p.label}
+                  </button>
+                ))
+              }
+              {(!priorities || priorities.filter(p => p.value !== 'none').length === 0) && (
+                <p className="filter-empty">No priorities available</p>
+              )}
             </div>
           </div>
         </div>
