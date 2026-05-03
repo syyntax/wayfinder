@@ -19,7 +19,7 @@ router.get('/:id', [
 router.post('/', [
     body('title').isLength({ min: 1, max: 200 }).trim().withMessage('Card title required (1-200 chars)'),
     body('listId').isUUID().withMessage('Valid list ID required'),
-    body('description').optional().isLength({ max: 5000 }),
+    body('description').optional().isLength({ max: 100000 }),
     body('dueDate').optional().isISO8601(),
     body('priority').optional().isString().isLength({ max: 50 }).withMessage('Invalid priority'),
     handleValidationErrors
@@ -29,7 +29,7 @@ router.post('/', [
 router.patch('/:id', [
     param('id').isUUID().withMessage('Invalid card ID'),
     body('title').optional().isLength({ min: 1, max: 200 }).trim(),
-    body('description').optional().isLength({ max: 5000 }),
+    body('description').optional().isLength({ max: 100000 }),
     body('dueDate').optional({ nullable: true }).isISO8601(),
     body('priority').optional().isString().isLength({ max: 50 }).withMessage('Invalid priority'),
     body('status').optional().isIn(['active', 'blocked', 'in_review', 'complete']),

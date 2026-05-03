@@ -102,8 +102,8 @@ export const cardValidation = [
         .withMessage('List ID is required'),
     body('description')
         .optional()
-        .isLength({ max: 5000 })
-        .withMessage('Description must be under 5000 characters'),
+        .isLength({ max: 100000 })
+        .withMessage('Description must be under 100000 characters'),
     body('dueDate')
         .optional()
         .isISO8601()

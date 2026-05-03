@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { cardApi, commentApi, checklistApi, attachmentApi, coverApi } from '../utils/api';
 import useBoardStore from '../store/boardStore';
+import useAuthStore from '../store/authStore';
 import Checklist from './Checklist';
 import AttachmentsList from './AttachmentsList';
 import FileUploadZone, { formatFileSize } from './FileUploadZone';
@@ -14,12 +15,15 @@ import './CardDetailModal.css';
 
 function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
   const { updateCard, updateCardLabels, updateCardAssignees, deleteCard, priorities } = useBoardStore();
+  const { user } = useAuthStore();
   const [card, setCard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -278,6 +282,34 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
       setNewComment('');
     } catch (error) {
       toast.error('Failed to add comment');
+    }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentContent(comment.content);
+  };
+
+  const handleCancelCommentEdit = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent('');
+  };
+
+  const handleSaveCommentEdit = async (commentId) => {
+    if (!editingCommentContent.trim()) return;
+    try {
+      const response = await commentApi.update(commentId, { content: editingCommentContent.trim() });
+      setCard((prev) => ({
+        ...prev,
+        comments: prev.comments.map((c) =>
+          c.id === commentId ? response.data.comment : c
+        ),
+      }));
+      setEditingCommentId(null);
+      setEditingCommentContent('');
+      toast.success('Comment updated');
+    } catch (error) {
+      toast.error(error.message || 'Failed to update comment');
     }
   };
 
@@ -829,7 +861,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                   <div key={comment.id} className="activity-item comment">
                     <div className="activity-avatar">
                       {comment.avatar_url ? (
-                        <img src={comment.avatar_url} alt={comment.display_name} />
+                        <img src={comment.avatar_url} alt={comment.display_name || comment.username} />
                       ) : (
                         <span>{(comment.display_name || comment.username)[0].toUpperCase()}</span>
                       )}
@@ -840,8 +872,57 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                         <span className="activity-time">
                           {format(new Date(comment.created_at), 'MMM d, yyyy h:mm a')}
                         </span>
+                        {comment.is_edited === 1 && (
+                          <span className="comment-edited-badge">(edited)</span>
+                        )}
+                        {comment.user_id === user?.id && editingCommentId !== comment.id && (
+                          <button
+                            className="comment-edit-btn"
+                            onClick={() => handleEditComment(comment)}
+                            title="Edit comment"
+                          >
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
-                      <p className="comment-text">{renderWithMentions(comment.content, memberUsernameSet)}</p>
+
+                      {editingCommentId === comment.id ? (
+                        <div className="comment-edit-form">
+                          <MentionAutocomplete
+                            value={editingCommentContent}
+                            onChange={(e) => setEditingCommentContent(e.target.value)}
+                            members={members}
+                            rows={3}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                handleSaveCommentEdit(comment.id);
+                              } else if (e.key === 'Escape') {
+                                handleCancelCommentEdit();
+                              }
+                            }}
+                          />
+                          <div className="comment-edit-actions">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleSaveCommentEdit(comment.id)}
+                              disabled={!editingCommentContent.trim()}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={handleCancelCommentEdit}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="comment-text">{renderWithMentions(comment.content, memberUsernameSet)}</p>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -454,6 +454,60 @@
   word-break: break-word;
 }
 
+/* Comment edit button — shown in activity-header for own comments */
+.comment-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.comment-edit-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.comment-edit-btn:hover {
+  color: var(--color-neon-cyan);
+  background: rgba(6, 182, 212, 0.1);
+}
+
+/* Show edit button when hovering the comment */
+.activity-item.comment:hover .comment-edit-btn {
+  opacity: 1;
+}
+
+/* "(edited)" badge */
+.comment-edited-badge {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Inline edit form inside a comment */
+.comment-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-self: flex-start;
+}
+
 /* Sidebar Buttons */
 .sidebar-button {
   display: flex;
