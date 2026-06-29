@@ -186,6 +186,24 @@
   animation: spin 0.8s linear infinite;
 }
 
+/* Card Description - Edit Button */
+.description-edit-btn {
+  padding: 4px var(--space-sm);
+  background: transparent;
+  border: 1px solid var(--color-steel);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.description-edit-btn:hover {
+  border-color: var(--color-cyber-purple);
+  color: var(--color-cyber-purple);
+  background: rgba(139, 92, 246, 0.1);
+}
+
 /* Card Description - View Mode */
 .description-view {
   position: relative;
@@ -194,18 +212,6 @@
   background: var(--color-shadow);
   border: 1px solid var(--color-steel);
   border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.description-view:hover {
-  border-color: var(--color-ash);
-  background: var(--color-obsidian);
-}
-
-.description-view:focus-visible {
-  outline: 2px solid var(--color-cyber-purple);
-  outline-offset: 2px;
 }
 
 .description-view.empty {
@@ -228,36 +234,6 @@
   height: 16px;
 }
 
-/* Edit overlay on hover */
-.description-edit-overlay {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: 4px var(--space-sm);
-  background: var(--color-obsidian);
-  border: 1px solid var(--color-steel);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
-  font-size: 0.75rem;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: all var(--transition-fast);
-  pointer-events: none;
-}
-
-.description-edit-overlay svg {
-  width: 12px;
-  height: 12px;
-}
-
-.description-view:hover .description-edit-overlay {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Description Editor */
 .description-editor {
   display: flex;
@@ -277,7 +253,7 @@
   font-size: 0.95rem;
   line-height: 1.6;
   resize: vertical;
-  min-height: 150px;
+  min-height: 300px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 

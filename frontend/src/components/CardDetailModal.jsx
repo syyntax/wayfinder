@@ -675,6 +675,14 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                     )}
                   </span>
                 )}
+                {!isEditingDescription && (
+                  <button
+                    className="description-edit-btn"
+                    onClick={handleStartEditingDescription}
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
 
               {isEditingDescription ? (
@@ -686,7 +694,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                     onKeyDown={handleDescriptionKeyDown}
                     placeholder="Add a more detailed description... (Markdown supported)"
                     className="card-description-input"
-                    rows={8}
+                    rows={16}
                     members={members}
                   />
                   <div className="description-editor-hint">
@@ -716,18 +724,7 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                   </div>
                 </div>
               ) : (
-                <div
-                  className={`description-view ${!card.description ? 'empty' : ''}`}
-                  onClick={handleStartEditingDescription}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleStartEditingDescription();
-                    }
-                  }}
-                >
+                <div className={`description-view ${!card.description ? 'empty' : ''}`}>
                   {card.description ? (
                     <MarkdownRenderer content={card.description} members={members} />
                   ) : (
@@ -735,15 +732,9 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                       <svg viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                       </svg>
-                      Click to add a description...
+                      No description added yet.
                     </span>
                   )}
-                  <div className="description-edit-overlay">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                    Edit
-                  </div>
                 </div>
               )}
             </div>
