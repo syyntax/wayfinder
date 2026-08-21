@@ -22,7 +22,8 @@ import mailRoutes from './routes/mail.js';
 import userManagementRoutes from './routes/userManagement.js';
 import appSettingsRoutes from './routes/appSettings.js';
 import notificationRoutes from './routes/notifications.js';
-import { UPLOAD_DIRS } from './middleware/upload.js';
+import { UPLOAD_DIRS, refreshUploadConfig } from './middleware/upload.js';
+import { getDatabase } from './db/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,8 +36,9 @@ const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Initialize database
+// Initialize database and load admin-configured upload limits
 initializeDatabase();
+refreshUploadConfig(getDatabase());
 
 // Security middleware
 app.use(helmet({

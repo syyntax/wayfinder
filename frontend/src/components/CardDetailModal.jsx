@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { cardApi, commentApi, checklistApi, attachmentApi, coverApi } from '../utils/api';
+import { cardApi, commentApi, checklistApi, attachmentApi, coverApi, appSettingsApi } from '../utils/api';
 import useBoardStore from '../store/boardStore';
 import useAuthStore from '../store/authStore';
 import Checklist from './Checklist';
@@ -41,6 +41,8 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
   const [attachments, setAttachments] = useState([]);
   const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMaxSizeMb, setUploadMaxSizeMb] = useState(10);
+  const [uploadAllowedExtensions, setUploadAllowedExtensions] = useState(null);
 
   // Drag and drop state
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -60,6 +62,12 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
 
   useEffect(() => {
     loadCard();
+    appSettingsApi.getPublicSettings().then(res => {
+      if (res.data?.max_upload_size_mb) setUploadMaxSizeMb(res.data.max_upload_size_mb);
+      if (res.data?.allowed_attachment_extensions?.length > 0) {
+        setUploadAllowedExtensions(res.data.allowed_attachment_extensions);
+      }
+    }).catch(() => {});
   }, [cardId]);
 
   useEffect(() => {
@@ -781,6 +789,8 @@ function CardDetailModal({ cardId, onClose, labels: boardLabels, members }) {
                 disabled={isUploadingAttachments}
                 compact={true}
                 className="card-attachment-upload"
+                maxFileSizeMb={uploadMaxSizeMb}
+                allowedExtensions={uploadAllowedExtensions}
               >
                 {isUploadingAttachments ? (
                   <div className="upload-progress-content">

@@ -25,7 +25,7 @@ router.post('/cards/:cardId/attachments',
         param('cardId').isUUID().withMessage('Invalid card ID'),
         handleValidationErrors
     ],
-    uploadAttachment.array('files', 5),
+    uploadAttachment,
     handleMulterError,
     uploadAttachments
 );

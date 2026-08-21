@@ -132,12 +132,24 @@ function SettingsPage() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
-  // App Settings state (registration approval)
+  // App Settings state (registration approval + upload config)
   const [appSettings, setAppSettings] = useState({
     registration_requires_approval: false
   });
   const [isLoadingAppSettings, setIsLoadingAppSettings] = useState(false);
   const [isUpdatingAppSettings, setIsUpdatingAppSettings] = useState(false);
+
+  // Upload settings state
+  const [uploadSettings, setUploadSettings] = useState({
+    max_upload_size_mb: 10,
+    allowed_attachment_extensions: [],
+  });
+  const [uploadSettingsDraft, setUploadSettingsDraft] = useState({
+    max_upload_size_mb: 10,
+    allowed_attachment_extensions: [],
+  });
+  const [isSavingUploadSettings, setIsSavingUploadSettings] = useState(false);
+  const [extensionInput, setExtensionInput] = useState('');
 
   // Pending Users state
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -153,6 +165,13 @@ function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'mail' && user?.role === 'super_admin') {
       loadMailSettings();
+    }
+  }, [activeTab, user?.role]);
+
+  // Load site settings when tab changes to site (Super Admin only)
+  useEffect(() => {
+    if (activeTab === 'site' && user?.role === 'super_admin') {
+      loadAppSettings();
     }
   }, [activeTab, user?.role]);
 
@@ -211,6 +230,12 @@ function SettingsPage() {
         setAppSettings({
           registration_requires_approval: response.data.registration_requires_approval || false
         });
+        const uploadData = {
+          max_upload_size_mb: response.data.max_upload_size_mb || 10,
+          allowed_attachment_extensions: response.data.allowed_attachment_extensions || [],
+        };
+        setUploadSettings(uploadData);
+        setUploadSettingsDraft(uploadData);
       }
     } catch (error) {
       console.error('Failed to load app settings:', error);
@@ -235,6 +260,55 @@ function SettingsPage() {
     } finally {
       setIsUpdatingAppSettings(false);
     }
+  };
+
+  const handleSaveUploadSettings = async () => {
+    const sizeMb = parseInt(uploadSettingsDraft.max_upload_size_mb, 10);
+    if (isNaN(sizeMb) || sizeMb < 1 || sizeMb > 500) {
+      toast.error('Max file size must be between 1 and 500 MB');
+      return;
+    }
+    setIsSavingUploadSettings(true);
+    try {
+      const response = await appSettingsApi.updateSettings({
+        max_upload_size_mb: sizeMb,
+        allowed_attachment_extensions: uploadSettingsDraft.allowed_attachment_extensions,
+      });
+      if (response.data) {
+        const updated = {
+          max_upload_size_mb: response.data.max_upload_size_mb,
+          allowed_attachment_extensions: response.data.allowed_attachment_extensions,
+        };
+        setUploadSettings(updated);
+        setUploadSettingsDraft(updated);
+      }
+      toast.success('Upload settings saved');
+    } catch (error) {
+      toast.error(error.message || 'Failed to save upload settings');
+    } finally {
+      setIsSavingUploadSettings(false);
+    }
+  };
+
+  const handleAddExtension = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const ext = extensionInput.trim().toLowerCase().replace(/^\./, '');
+      if (ext && !uploadSettingsDraft.allowed_attachment_extensions.includes(ext)) {
+        setUploadSettingsDraft(prev => ({
+          ...prev,
+          allowed_attachment_extensions: [...prev.allowed_attachment_extensions, ext],
+        }));
+      }
+      setExtensionInput('');
+    }
+  };
+
+  const handleRemoveExtension = (ext) => {
+    setUploadSettingsDraft(prev => ({
+      ...prev,
+      allowed_attachment_extensions: prev.allowed_attachment_extensions.filter(e => e !== ext),
+    }));
   };
 
   // Pending Users functions
@@ -748,6 +822,17 @@ function SettingsPage() {
             </button>
             {user?.role === 'super_admin' && (
               <button
+                className={`nav-item ${activeTab === 'site' ? 'active' : ''}`}
+                onClick={() => setActiveTab('site')}
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                </svg>
+                Site Settings
+              </button>
+            )}
+            {user?.role === 'super_admin' && (
+              <button
                 className={`nav-item ${activeTab === 'mail' ? 'active' : ''}`}
                 onClick={() => setActiveTab('mail')}
               >
@@ -1068,6 +1153,107 @@ function SettingsPage() {
                   <p className="preference-desc">
                     Press <kbd>?</kbd> anywhere in the app to see available keyboard shortcuts.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'site' && user?.role === 'super_admin' && (
+              <div className="settings-panel">
+                <div className="panel-header-with-badge">
+                  <div>
+                    <h2 className="panel-title">Site Settings</h2>
+                    <p className="panel-description">
+                      Configure site-wide behaviour such as file upload limits and allowed file types.
+                    </p>
+                  </div>
+                  <span className="super-admin-badge">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Super Admin Only
+                  </span>
+                </div>
+
+                <div className="user-management-section upload-settings-section">
+                  <h3 className="section-subtitle">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                    File Upload Settings
+                  </h3>
+
+                  <div className="upload-settings-form">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Maximum Attachment Size (MB)
+                        <span className="form-hint-inline"> — applies to card file attachments</span>
+                      </label>
+                      <div className="upload-size-input-row">
+                        <input
+                          type="number"
+                          min="1"
+                          max="500"
+                          value={uploadSettingsDraft.max_upload_size_mb}
+                          onChange={(e) => setUploadSettingsDraft(prev => ({ ...prev, max_upload_size_mb: e.target.value }))}
+                          className="upload-size-input"
+                        />
+                        <span className="upload-size-unit">MB</span>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Allowed File Extensions</label>
+                      <p className="form-description">
+                        Type an extension and press <kbd>Enter</kbd> to add it. Removing all extensions restores the system defaults.
+                      </p>
+                      <div className="extension-tag-input">
+                        {uploadSettingsDraft.allowed_attachment_extensions.map(ext => (
+                          <span key={ext} className="extension-tag">
+                            .{ext}
+                            <button
+                              className="extension-tag-remove"
+                              onClick={() => handleRemoveExtension(ext)}
+                              title={`Remove .${ext}`}
+                            >
+                              <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          type="text"
+                          className="extension-input"
+                          placeholder="e.g. pdf"
+                          value={extensionInput}
+                          onChange={(e) => setExtensionInput(e.target.value)}
+                          onKeyDown={handleAddExtension}
+                        />
+                      </div>
+                      {uploadSettingsDraft.allowed_attachment_extensions.length === 0 && (
+                        <p className="form-hint">No extensions configured — system defaults will be used (images, PDFs, documents, archives).</p>
+                      )}
+                    </div>
+
+                    <div className="upload-settings-actions">
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleSaveUploadSettings}
+                        disabled={isSavingUploadSettings || isLoadingAppSettings}
+                      >
+                        {isSavingUploadSettings ? (
+                          <><span className="btn-spinner" /> Saving...</>
+                        ) : 'Save Upload Settings'}
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => setUploadSettingsDraft(uploadSettings)}
+                        disabled={isSavingUploadSettings}
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

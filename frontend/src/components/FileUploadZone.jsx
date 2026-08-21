@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import './FileUploadZone.css';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const DEFAULT_MAX_FILE_SIZE_MB = 10;
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
@@ -59,25 +59,38 @@ export function getFileIcon(mimeType) {
 /**
  * Validate files before upload
  */
-function validateFiles(files, imageOnly = false) {
+function getFileExtension(filename) {
+  const dot = filename.lastIndexOf('.');
+  return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : '';
+}
+
+function validateFiles(files, imageOnly = false, maxFileSizeMb = DEFAULT_MAX_FILE_SIZE_MB, allowedExtensions = null) {
   const errors = [];
   const validFiles = [];
+  const maxBytes = maxFileSizeMb * 1024 * 1024;
 
   Array.from(files).forEach((file) => {
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      errors.push(`"${file.name}" exceeds 5 MB limit`);
+    if (file.size > maxBytes) {
+      errors.push(`"${file.name}" exceeds ${maxFileSizeMb} MB limit`);
       return;
     }
 
-    // Check file type
-    const allowedTypes = imageOnly ? ALLOWED_IMAGE_TYPES : ALLOWED_ATTACHMENT_TYPES;
-    if (!allowedTypes.includes(file.type)) {
-      const typeMsg = imageOnly
-        ? 'Only JPEG, PNG, GIF, and WebP images are allowed'
-        : 'This file type is not allowed';
-      errors.push(`"${file.name}": ${typeMsg}`);
-      return;
+    if (imageOnly) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        errors.push(`"${file.name}": Only JPEG, PNG, GIF, and WebP images are allowed`);
+        return;
+      }
+    } else if (allowedExtensions && allowedExtensions.length > 0) {
+      const ext = getFileExtension(file.name);
+      if (!allowedExtensions.includes(ext)) {
+        errors.push(`"${file.name}": .${ext} files are not allowed`);
+        return;
+      }
+    } else {
+      if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
+        errors.push(`"${file.name}": This file type is not allowed`);
+        return;
+      }
     }
 
     validFiles.push(file);
@@ -98,6 +111,8 @@ function FileUploadZone({
   compact = false,
   showPreview = false,
   className = '',
+  maxFileSizeMb = DEFAULT_MAX_FILE_SIZE_MB,
+  allowedExtensions = null,
   children,
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -143,7 +158,7 @@ function FileUploadZone({
         processFiles(files);
       }
     },
-    [disabled, imageOnly, multiple, onFilesSelected, showPreview]
+    [allowedExtensions, disabled, imageOnly, maxFileSizeMb, multiple, onFilesSelected, showPreview]
   );
 
   const handleFileInputChange = useCallback(
@@ -155,13 +170,13 @@ function FileUploadZone({
       // Reset input so the same file can be selected again
       e.target.value = '';
     },
-    [imageOnly, multiple, onFilesSelected, showPreview]
+    [allowedExtensions, imageOnly, maxFileSizeMb, multiple, onFilesSelected, showPreview]
   );
 
   const processFiles = useCallback(
     (files) => {
       const filesToProcess = multiple ? files : [files[0]];
-      const { validFiles, errors } = validateFiles(filesToProcess, imageOnly);
+      const { validFiles, errors } = validateFiles(filesToProcess, imageOnly, maxFileSizeMb, allowedExtensions);
 
       if (errors.length > 0) {
         // Report errors via callback if provided
@@ -187,7 +202,7 @@ function FileUploadZone({
         }
       }
     },
-    [imageOnly, multiple, onFilesSelected, showPreview]
+    [allowedExtensions, imageOnly, maxFileSizeMb, multiple, onFilesSelected, showPreview]
   );
 
   const handleClick = useCallback(() => {
@@ -204,7 +219,9 @@ function FileUploadZone({
 
   const acceptTypes = imageOnly
     ? ALLOWED_IMAGE_TYPES.join(',')
-    : ALLOWED_ATTACHMENT_TYPES.join(',');
+    : allowedExtensions && allowedExtensions.length > 0
+      ? allowedExtensions.map(e => `.${e}`).join(',')
+      : ALLOWED_ATTACHMENT_TYPES.join(',');
 
   return (
     <div
@@ -262,7 +279,7 @@ function FileUploadZone({
             </span>
           </div>
           <div className="file-upload-hint">
-            {imageOnly ? 'JPEG, PNG, GIF, WebP' : 'Images, PDFs, documents'} - Max 5 MB
+            {imageOnly ? 'JPEG, PNG, GIF, WebP' : 'Images, PDFs, documents'} - Max {maxFileSizeMb} MB
           </div>
         </div>
       )}
